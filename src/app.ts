@@ -25,7 +25,7 @@ const app = express();
 
 connectDB();
 app.get("/", (req: Request, res: Response) => {
-  return res.json({ message: "Welcome to DoubleDate APIs" });
+  return res.json({ message: "Welcome to Doctor Speech APIs" });
 });
 
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
