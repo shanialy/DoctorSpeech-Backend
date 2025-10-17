@@ -1,7 +1,8 @@
 import { createServer, Server } from "http";
 import app from "./app";
+import { PORT } from "./config/environment";
 
-const SERVER_PORT = 5000;
+const SERVER_PORT = PORT || 5000;
 const httpServer: Server = createServer(app);
 
 httpServer.listen(SERVER_PORT, () => {
