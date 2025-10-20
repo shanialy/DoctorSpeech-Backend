@@ -4,24 +4,28 @@ const UserSchema = new Schema(
   {
     email: { type: Schema.Types.String, requried: true, unique: true },
     password: { type: Schema.Types.String },
-    firstName: { type: Schema.Types.String },
-    lastName: { type: Schema.Types.String },
-    phoneNumber: { type: Schema.Types.String },
-    countryCode: { type: Schema.Types.String },
+    firstName: { type: Schema.Types.String, default: "" },
+    lastName: { type: Schema.Types.String, default: "" },
+    phoneNumber: { type: Schema.Types.String, default: "" },
+    countryCode: { type: Schema.Types.String, default: "" },
     sessionCharges: { type: Schema.Types.Number },
     userType: {
       type: Schema.Types.String,
       enum: ["User", "Therapist"],
+      default: "User",
     },
     provider: {
       type: Schema.Types.String,
       enum: ["Google", "Apple", "Email"],
+      default: "Email",
     },
     gender: {
       type: Schema.Types.String,
+      default: "",
     },
     age: {
       type: Schema.Types.String,
+      default: "",
     },
     profilePicture: {
       type: Schema.Types.String,
@@ -78,7 +82,7 @@ const UserSchema = new Schema(
       coordinates: {
         type: [Schema.Types.Number],
       },
-      address: { type: Schema.Types.String },
+      address: { type: Schema.Types.String, default: "" },
     },
   },
   {

@@ -1,0 +1,64 @@
+import { Router } from "express";
+import { checkAuth } from "../middleware/checkAuth";
+import {
+  home,
+  addKid,
+  bookSession,
+  bookingDetails,
+  cancelBooking,
+  deleteKid,
+  detailResource,
+  getTherapistDetails,
+  listKid,
+  myBookings,
+  resources,
+  reviewTherapist,
+  updateLocation,
+} from "../controllers/userController";
+
+const router = Router();
+
+router.get("/home", checkAuth, home);
+router.put("/updateLocation", checkAuth, updateLocation);
+router.get("/getTherapistDetails/:therapistId", checkAuth, getTherapistDetails);
+router.post("/session", checkAuth, bookSession);
+router.get("/session", checkAuth, myBookings);
+router.get("/session/:id", checkAuth, bookingDetails);
+router.post("/reviewTherapist", checkAuth, reviewTherapist);
+router.post("/cancelBooking", checkAuth, cancelBooking);
+router.post("/resources", checkAuth, resources);
+router.post("/detailResource/:id", checkAuth, detailResource);
+router.get("/kid", checkAuth, listKid);
+router.post("/kid", checkAuth, addKid);
+router.delete("/kid", checkAuth, deleteKid);
+
+export default router;
+
+/**
+ * @swagger
+ * /api/v1/auth/login:
+ *   post:
+ *     summary: Login to the application
+ *     tags: [Authentication Flow]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Successful login
+ *       400:
+ *         description: Bad request
+ *       500:
+ *         description: Internal Server Error
+ */

@@ -6,15 +6,8 @@ import { connectDB } from "./config/db";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import authRoutes from "./routes/authRoutes";
-// import userRoutes from "./routes/userRoutes";
-// import adminRoutes from "./routes/adminRoutes";
-// import friendsRoutes from "./routes/friendsRoutes";
-// import newsFeedRoutes from "./routes/newsFeedRoutes";
-// import doubleDateRoutes from "./routes/doubleDateRoutes";
-// import ideaPlannerRoutes from "./routes/ideaPlannerRoutes";
-// import notificationRoutes from "./routes/notificationRoutes";
-// import subscribedDoubleDatesRoute from "./routes/subscribedDoubleDatesRoute";
-// import conversationRoute from "./routes/conversationRoute";
+import userRoutes from "./routes/userRoutes";
+import therapistRoutes from "./routes/therapistRoute";
 import swaggerOptions from "./config/swagger";
 import express, { Request, Response } from "express";
 import { API_PREFIX } from "./config/environment";
@@ -44,6 +37,8 @@ morganBody(app, {
 
 // Routes
 app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/user`, userRoutes);
+app.use(`${API_PREFIX}/therapist`, therapistRoutes);
 // app.use(`${API_PREFIX}/news-feed`, newsFeedRoutes);
 // app.use(`${API_PREFIX}/user`, userRoutes);
 // app.use(`${API_PREFIX}/admin`, adminRoutes);

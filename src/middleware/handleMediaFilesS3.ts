@@ -32,7 +32,7 @@ const generateFileName = (originalName: string) => {
 };
 
 /**
- * @param fields - [{ name: "profilePicture", maxCount: 1 }, { name: "gallery", maxCount: 5 }]
+ * @param fields - [{ name: "profilePicture", maxCount: 1 }, { name: "certificationMedia", maxCount: 5 }]
  * @param options - { optional?: boolean } // if true, skips error when no files are uploaded
  */
 export const handleMediaFilesS3 = (

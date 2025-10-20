@@ -20,11 +20,14 @@ import { handleMediaFilesS3 } from "../middleware/handleMediaFilesS3";
 
 const router = Router();
 
-router.post("/signup", checkBearer, signup);
+router.post("/signup", signup);
 router.post(
   "/create-profile",
-  // checkAuth,
-  handleMediaFilesS3([{ name: "profilePicture", maxCount: 1 }]),
+  checkAuth,
+  handleMediaFilesS3([
+    { name: "profilePicture", maxCount: 1 },
+    { name: "certificationMedia", maxCount: 5 },
+  ]),
   createProfile
 );
 router.put(

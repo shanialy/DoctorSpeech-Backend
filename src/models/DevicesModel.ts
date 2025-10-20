@@ -6,6 +6,7 @@ const DeviceSchema = new Schema({
   deviceType: {
     type: Schema.Types.String,
     enum: ["Android", "IOS", "Postman"],
+    default: "Postman",
   },
 });
 

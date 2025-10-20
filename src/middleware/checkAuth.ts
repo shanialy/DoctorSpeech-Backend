@@ -24,7 +24,7 @@ export const checkAuth = (
     const decodedPayload = decoded as JwtPayload;
     req.userId = decodedPayload.id;
     req.email = decodedPayload.email;
-    req.name = decodedPayload.name ? decodedPayload.name : "";
+    req.userType = decodedPayload.userType ? decodedPayload.userType : "";
     next();
   });
 };

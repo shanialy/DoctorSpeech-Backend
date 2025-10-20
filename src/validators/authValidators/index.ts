@@ -43,10 +43,8 @@ export const otpVerifySchema: ZodSchema<{
 });
 export const otpSendSchema: ZodSchema<{
   email: string;
-  reason: string;
 }> = z.object({
   email: z.string().email("Invalid email format").max(255),
-  reason: z.string(),
 });
 export const changePasswordSchema: ZodSchema<{
   oldPassword: string;

@@ -24,6 +24,8 @@ import { STATUS_CODES } from "../constants/statusCodes";
 import { makeURL } from "../utils/BaseUrlConcatinator";
 import { CustomRequest } from "../interfaces/auth";
 import DeviceModel from "../models/DevicesModel";
+import CertificationModel from "../models/CertificationModel";
+import SlotModel from "../models/SlotModel";
 
 export const signup = async (req: Request, res: Response) => {
   try {
@@ -45,12 +47,12 @@ export const signup = async (req: Request, res: Response) => {
       password: hashPassword,
       userType,
     });
-    const otp = randomInt(1000, 9999);
+    const otp = randomInt(100000, 999999);
     await OtpModel.create({
       userId: user._id,
       otp: String(otp),
     });
-    const template = emailTemplateGeneric(otp, "registration");
+    const template = emailTemplateGeneric(otp);
     let devices = await DeviceModel.find({ deviceToken });
 
     await Promise.all([
@@ -124,8 +126,14 @@ export const login = async (req: Request, res: Response) => {
     const token = generateToken({
       email: email,
       id: String(user._id),
-      name: String(user.name),
+      userType: String(user.userType),
     });
+
+    user = user.toObject();
+    delete user.password;
+    delete user.devices;
+    delete user.workingSlots;
+    delete user.certifications;
 
     if (!user.isVerified) {
       return ResponseUtil.successResponse(
@@ -140,7 +148,7 @@ export const login = async (req: Request, res: Response) => {
       return ResponseUtil.successResponse(
         res,
         STATUS_CODES.BAD_REQUEST,
-        { token },
+        { token, user },
         AUTH_CONSTANTS.INCOMPLETE_PROFILE
       );
     }
@@ -169,9 +177,6 @@ export const login = async (req: Request, res: Response) => {
       },
       { new: true }
     );
-
-    user = user.toObject();
-    delete user.password;
 
     return ResponseUtil.successResponse(
       res,
@@ -223,7 +228,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
       const token = generateToken({
         email: user.email,
         id: String(findUser?._id),
-        name: findUser?.firstName ? String(findUser.firstName) : "",
+        userType: String(user.userType),
       });
 
       return ResponseUtil.successResponse(
@@ -245,33 +250,91 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
 export const createProfile = async (req: any, res: Response) => {
   try {
-    const { workingSlots, ...rest } = req.body;
+    let profilePicture = undefined;
 
+    if (
+      req.filesInfo &&
+      req.filesInfo.profilePicture &&
+      req.filesInfo.profilePicture.length
+    ) {
+      profilePicture = req.filesInfo.profilePicture[0].url;
+    }
+    // ForUser gender age firstName lastName phoneNumber about
+    // ForTherapist gender age firstName lastName phoneNumber about certifications availibility
     // const profilePicture = makeURL(req.file.filename as any);
 
-    let user: any = await UserModel.findByIdAndUpdate(
-      req.userId,
-      {
-        rest,
-        isProfileCompleted: true,
-        // profilePicture,
-      },
-      { new: true }
-    );
+    let user: any;
+    if (req.userType == "User") {
+      user = await UserModel.findByIdAndUpdate(
+        req.userId,
+        {
+          ...req.body,
+          isProfileCompleted: true,
+          profilePicture,
+        },
+        { new: true }
+      );
+    }
+    if (req.userType == "Therapist") {
+      let addedSlots = false;
+      const { certifications, slots, ...rest } = req.body;
+      const parsedCertifications = JSON.parse(certifications);
+      const parsedSlots = JSON.parse(slots);
+      const uploadedMedia = req.filesInfo?.certificationMedia || [];
+      await Promise.all(
+        parsedCertifications.map(async (cert: any, index: number) => {
+          const file = uploadedMedia[index];
+          return await CertificationModel.create({
+            user: req.userId,
+            degreeName: cert.degreeName,
+            instituteName: cert.instituteName,
+            completionYear: cert.completionYear,
+            media: file
+              ? {
+                  mediaType: file.contentType,
+                  url: file.url,
+                }
+              : undefined,
+          });
+        })
+      );
+      const slotDocs = parsedSlots.map((slot: any) => ({
+        therapist: req.userId,
+        day: slot.day,
+        times: slot.times.map((time: any) => ({
+          startTime: time.startTime,
+          endTime: time.endTime,
+        })),
+      }));
 
-    // if (workingSlots && workingSlots.length) {
-    // }
+      if (slotDocs.length > 0) {
+        addedSlots = true;
+        await SlotModel.insertMany(slotDocs);
+      }
+
+      user = await UserModel.findByIdAndUpdate(
+        req.userId,
+        {
+          ...rest,
+          isProfileCompleted: true,
+          profilePicture,
+          isSelectSlots: addedSlots,
+        },
+        { new: true }
+      );
+    }
 
     const token = generateToken({
       email: String(user.email),
       id: String(req.userId),
-      name: String(user.firstName),
+      userType: String(user.userType),
     });
 
     user = user.toObject();
     delete user.password;
     delete user.devices;
-    delete user.blocked;
+    delete user.workingSlots;
+    delete user.certifications;
 
     return ResponseUtil.successResponse(
       res,
@@ -286,7 +349,7 @@ export const createProfile = async (req: any, res: Response) => {
 
 export const sendOtp = async (req: Request, res: Response) => {
   try {
-    const { email, reason } = otpSendSchema.parse(req.body);
+    const { email } = otpSendSchema.parse(req.body);
     const user = await UserModel.findOne({ email });
     if (!user) {
       return ResponseUtil.errorResponse(
@@ -295,7 +358,7 @@ export const sendOtp = async (req: Request, res: Response) => {
         AUTH_CONSTANTS.USER_NOT_FOUND
       );
     }
-    const otp = randomInt(1000, 9999);
+    const otp = randomInt(100000, 999999);
     const model = await OtpModel.findOneAndUpdate(
       { userId: user._id },
       { otp: String(otp), expiry: new Date(Date.now() + 10 * 60 * 1000) }
@@ -306,7 +369,7 @@ export const sendOtp = async (req: Request, res: Response) => {
         otp: String(otp),
       });
     }
-    const template = emailTemplateGeneric(otp, reason);
+    const template = emailTemplateGeneric(otp);
     await sendEmail(email, AUTH_CONSTANTS.VERIFICATION_CODE, template);
     return ResponseUtil.successResponse(
       res,
