@@ -8,7 +8,7 @@ const UserSchema = new Schema(
     lastName: { type: Schema.Types.String, default: "" },
     phoneNumber: { type: Schema.Types.String, default: "" },
     countryCode: { type: Schema.Types.String, default: "" },
-    sessionCharges: { type: Schema.Types.Number },
+    sessionCharges: { type: Schema.Types.Number, default: 0 },
     userType: {
       type: Schema.Types.String,
       enum: ["User", "Therapist"],
@@ -81,8 +81,12 @@ const UserSchema = new Schema(
       },
       coordinates: {
         type: [Schema.Types.Number],
+        default: [0, 0],
       },
       address: { type: Schema.Types.String, default: "" },
+    },
+    speciality: {
+      text: [{ type: Schema.Types.String }],
     },
   },
   {
@@ -90,6 +94,7 @@ const UserSchema = new Schema(
   }
 );
 
+UserSchema.index({ location: "2dsphere" });
 const UserModel = model("User", UserSchema);
 
 export default UserModel;

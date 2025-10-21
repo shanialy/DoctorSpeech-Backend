@@ -14,13 +14,15 @@ import {
   resources,
   reviewTherapist,
   updateLocation,
+  getAvailableSlots,
 } from "../controllers/userController";
 
 const router = Router();
 
 router.get("/home", checkAuth, home);
 router.put("/updateLocation", checkAuth, updateLocation);
-router.get("/getTherapistDetails/:therapistId", checkAuth, getTherapistDetails);
+router.get("/therapistDetails/:therapistId", checkAuth, getTherapistDetails);
+router.get("/therapistSlots/:therapistId", checkAuth, getAvailableSlots);
 router.post("/session", checkAuth, bookSession);
 router.get("/session", checkAuth, myBookings);
 router.get("/session/:id", checkAuth, bookingDetails);
