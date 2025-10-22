@@ -9,6 +9,7 @@ import SlotModel from "../models/SlotModel";
 import ReviewModel from "../models/ReviewModel";
 import BookingModel from "../models/BookingModel";
 import KidModel from "../models/KidModel";
+import ResourceModel from "../models/ResourceModel";
 
 export const home = async (req: CustomRequest, res: Response) => {
   try {
@@ -572,11 +573,15 @@ export const markAsCompleted = async (req: CustomRequest, res: Response) => {
 
 export const resources = async (req: CustomRequest, res: Response) => {
   try {
+    const resources = await ResourceModel.find().select(
+      "title description totalTasks"
+    );
+
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
-      {},
-      AUTH_CONSTANTS.USER_FETCHED
+      { resources },
+      AUTH_CONSTANTS.FETCHED
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -585,11 +590,12 @@ export const resources = async (req: CustomRequest, res: Response) => {
 
 export const detailResource = async (req: CustomRequest, res: Response) => {
   try {
+    const resource = await ResourceModel.findById(req.params.id);
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
-      {},
-      AUTH_CONSTANTS.USER_FETCHED
+      { resource },
+      AUTH_CONSTANTS.FETCHED
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
