@@ -18,8 +18,9 @@ class ResponseUtil {
 
   static errorResponse(res: Response, statusCode: number, message: string) {
     res.status(statusCode).json({
-      statusCode: statusCode,
+      status: statusCode,
       success: false,
+      data: {},
       message,
     });
   }
