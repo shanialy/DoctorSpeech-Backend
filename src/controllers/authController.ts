@@ -316,6 +316,9 @@ export const createProfile = async (req: any, res: Response) => {
         req.userId,
         {
           ...rest,
+          ...(rest.sessionCharges && {
+            sessionCharges: Number(rest.sessionCharges),
+          }),
           isProfileCompleted: true,
           profilePicture,
           isSelectSlots: addedSlots,

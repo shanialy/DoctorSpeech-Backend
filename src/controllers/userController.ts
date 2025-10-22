@@ -8,65 +8,112 @@ import CertificationModel from "../models/CertificationModel";
 import SlotModel from "../models/SlotModel";
 import ReviewModel from "../models/ReviewModel";
 import BookingModel from "../models/BookingModel";
+import KidModel from "../models/KidModel";
 
 export const home = async (req: CustomRequest, res: Response) => {
   try {
-    const currentUser = await UserModel.findById(req.userId).select("location");
-    if (!currentUser || !currentUser.location?.coordinates?.length) {
-      return ResponseUtil.handleError(
-        res,
-        "User location not found. Please update your location first."
-      );
-    }
+    const currentUser: any = await UserModel.findById(req.userId).select(
+      "location"
+    );
+    const hasLocation =
+      currentUser?.location?.coordinates &&
+      currentUser.location.coordinates.length === 2;
 
-    const userCoordinates: any = currentUser.location.coordinates;
-    const maxDistanceInMeters = 5000;
+    const userCoordinates = hasLocation
+      ? currentUser.location.coordinates
+      : null;
+    const maxDistanceInMeters = 50000;
+
+    const featuredPipeline: any = [
+      {
+        $match: {
+          userType: "Therapist",
+        },
+      },
+      {
+        $lookup: {
+          from: "reviews",
+          localField: "_id",
+          foreignField: "therapist",
+          as: "reviews",
+        },
+      },
+      {
+        $addFields: {
+          averageRating: {
+            $cond: {
+              if: { $gt: [{ $size: "$reviews" }, 0] },
+              then: { $avg: "$reviews.rating" },
+              else: 0,
+            },
+          },
+        },
+      },
+      { $sort: { sessionCharges: 1 } },
+      { $sample: { size: 2 } },
+      {
+        $project: {
+          firstName: 1,
+          lastName: 1,
+          sessionCharges: 1,
+          profilePicture: 1,
+          speciality: 1,
+          averageRating: { $round: ["$averageRating", 1] },
+        },
+      },
+    ];
+
+    const nearbyPipeline: any = hasLocation
+      ? [
+          {
+            $geoNear: {
+              near: { type: "Point", coordinates: userCoordinates },
+              distanceField: "distance",
+              maxDistance: maxDistanceInMeters,
+              spherical: true,
+              query: { userType: "Therapist" },
+            },
+          },
+          { $match: { _id: { $ne: currentUser._id } } },
+          {
+            $lookup: {
+              from: "reviews",
+              localField: "_id",
+              foreignField: "therapist",
+              as: "reviews",
+            },
+          },
+          {
+            $addFields: {
+              averageRating: {
+                $cond: {
+                  if: { $gt: [{ $size: "$reviews" }, 0] },
+                  then: { $avg: "$reviews.rating" },
+                  else: 0,
+                },
+              },
+            },
+          },
+          { $limit: 2 },
+          {
+            $project: {
+              firstName: 1,
+              lastName: 1,
+              distance: 1,
+              profilePicture: 1,
+              speciality: 1,
+              sessionCharges: 1,
+              averageRating: { $round: ["$averageRating", 1] },
+            },
+          },
+        ]
+      : [];
 
     const [featured, nearby] = await Promise.all([
-      UserModel.aggregate([
-        {
-          $match: {
-            userType: "Therapist",
-            // sessionCharges: { $exists: true, $ne: null },
-          },
-        },
-        { $sort: { sessionCharges: 1 } },
-        { $sample: { size: 2 } },
-        {
-          $project: {
-            firstName: 1,
-            lastName: 1,
-            sessionCharges: 1,
-            profilePicture: 1,
-            speciality: 1,
-          },
-        },
-      ]),
-
-      UserModel.aggregate([
-        {
-          $geoNear: {
-            near: { type: "Point", coordinates: userCoordinates },
-            distanceField: "distance",
-            maxDistance: maxDistanceInMeters,
-            spherical: true,
-            query: { userType: "Therapist" },
-          },
-        },
-        { $match: { _id: { $ne: currentUser._id } } },
-        { $limit: 2 },
-        {
-          $project: {
-            firstName: 1,
-            lastName: 1,
-            distance: 1,
-            profilePicture: 1,
-            speciality: 1,
-            sessionCharges: 1,
-          },
-        },
-      ]),
+      UserModel.aggregate(featuredPipeline),
+      hasLocation ? UserModel.aggregate(nearbyPipeline) : [],
     ]);
+
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
@@ -173,7 +220,7 @@ export const getTherapistDetails = async (
 export const getAvailableSlots = async (req: CustomRequest, res: Response) => {
   try {
     const { therapistId } = req.params;
-    const { date } = req.query; // e.g., "2025-10-22"
+    const { date } = req.query;
 
     if (!date) {
       return ResponseUtil.errorResponse(
@@ -183,11 +230,9 @@ export const getAvailableSlots = async (req: CustomRequest, res: Response) => {
       );
     }
 
-    // 1️⃣ Get weekday from date
     const givenDate = new Date(date as string);
     const dayOfWeek = givenDate.toLocaleString("en-US", { weekday: "short" }); // e.g. "Monday"
 
-    // 2️⃣ Find slots of therapist for that day
     const slot = await SlotModel.findOne({
       therapist: therapistId,
       day: dayOfWeek,
@@ -200,20 +245,17 @@ export const getAvailableSlots = async (req: CustomRequest, res: Response) => {
       );
     }
 
-    // 3️⃣ Find already booked slots on that date
     const bookedSlots = await BookingModel.find({
       therapist: therapistId,
       date: new Date(date as string),
       status: { $in: ["Pending", "Accepted"] },
     }).lean();
 
-    // Extract booked start/end times
     const bookedTimes: any = bookedSlots.map((b: any) => ({
       startTime: b.startTime,
       endTime: b.endTime,
     }));
 
-    // 4️⃣ Filter available times
     const availableTimes = slot.times.filter((time) => {
       return !bookedTimes.some(
         (b: any) => b.startTime === time.startTime && b.endTime === time.endTime
@@ -282,7 +324,7 @@ export const bookSession = async (req: CustomRequest, res: Response) => {
 
     const existingBooking = await BookingModel.findOne({
       therapist: therapistId,
-      slot: parentSlot._id, // ✅ check against Slot document
+      slot: parentSlot._id,
       timeId: sessionSlot,
       date: new Date(sessionDate),
       status: { $in: ["Pending", "Accepted"] },
@@ -320,7 +362,6 @@ export const myBookings = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.userId;
 
-    // Fetch all user bookings with therapist & slot populated
     const bookings = await BookingModel.find({ bookedBy: userId })
       .populate("therapist", "firstName lastName profilePicture sessionCharges")
       .populate("slot", "day times")
@@ -328,7 +369,6 @@ export const myBookings = async (req: CustomRequest, res: Response) => {
 
     const now = new Date();
 
-    // Format and categorize
     const formattedBookings: any = bookings.map((b: any) => {
       const selectedTime = b.slot?.times?.find(
         (t: any) => String(t._id) === String(b.timeId)
@@ -354,11 +394,9 @@ export const myBookings = async (req: CustomRequest, res: Response) => {
       };
     });
 
-    // Separate by type
     const upcoming = formattedBookings.filter(
       (b: any) =>
-        new Date(b.date) >= now &&
-        (b.status === "Pending" || b.status === "Accepted")
+        new Date(b.date) >= now && b.isPaid == true && b.status === "Accepted"
     );
 
     const completed = formattedBookings.filter(
@@ -369,18 +407,22 @@ export const myBookings = async (req: CustomRequest, res: Response) => {
       (b: any) => b.status === "Pending"
     );
 
-    // Counts
+    const canceled = formattedBookings.filter(
+      (b: any) => b.status === "Rejected"
+    );
+
     const summary = {
       total: formattedBookings.length,
       upcoming: upcoming.length,
       completed: completed.length,
       pending: pending.length,
+      canceled: canceled.length,
     };
 
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
-      { summary, upcoming, completed, pending },
+      { summary, upcoming, completed, pending, canceled },
       "Bookings fetched successfully"
     );
   } catch (err) {
@@ -398,7 +440,7 @@ export const bookingDetails = async (req: CustomRequest, res: Response) => {
         "firstName lastName profilePicture sessionCharges gender"
       )
       .populate("slot", "day times")
-      .populate("bookedBy", "firstName lastName profilePicture") // optional, if user wants to see who booked
+      .populate("bookedBy", "firstName lastName profilePicture")
       .lean();
 
     if (!booking) {
@@ -409,12 +451,10 @@ export const bookingDetails = async (req: CustomRequest, res: Response) => {
       );
     }
 
-    // Extract the exact time object
     const selectedTime: any = booking.slot?.times?.find(
       (t: any) => String(t._id) === String(booking.timeId)
     );
 
-    // Structure response cleanly
     const formattedBooking = {
       _id: booking._id,
       therapist: booking.therapist
@@ -497,11 +537,33 @@ export const reviewTherapist = async (req: CustomRequest, res: Response) => {
 
 export const cancelBooking = async (req: CustomRequest, res: Response) => {
   try {
+    const { id } = req.params;
+    await BookingModel.findByIdAndUpdate(id, {
+      cancelBy: req.userId,
+      cancelReason: req.body.reason,
+      status: "Rejected",
+    });
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
       {},
-      AUTH_CONSTANTS.USER_FETCHED
+      "Booking cancel successfully"
+    );
+  } catch (err) {
+    return ResponseUtil.handleError(res, err);
+  }
+};
+export const markAsCompleted = async (req: CustomRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    await BookingModel.findByIdAndUpdate(id, {
+      status: "Completed",
+    });
+    return ResponseUtil.successResponse(
+      res,
+      STATUS_CODES.SUCCESS,
+      {},
+      "Marked successfully"
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -535,10 +597,13 @@ export const detailResource = async (req: CustomRequest, res: Response) => {
 };
 export const listKid = async (req: CustomRequest, res: Response) => {
   try {
+    const kids = await KidModel.find({
+      user: req.userId,
+    });
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
-      {},
+      { kids },
       AUTH_CONSTANTS.USER_FETCHED
     );
   } catch (err) {
@@ -547,11 +612,18 @@ export const listKid = async (req: CustomRequest, res: Response) => {
 };
 export const addKid = async (req: CustomRequest, res: Response) => {
   try {
+    await KidModel.create({
+      user: req.userId,
+      age: req.body.age,
+      name: req.body.name,
+      disorder: req.body.disorder,
+      summary: req.body.summary,
+    });
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
       {},
-      AUTH_CONSTANTS.USER_FETCHED
+      AUTH_CONSTANTS.CREATED
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -559,11 +631,98 @@ export const addKid = async (req: CustomRequest, res: Response) => {
 };
 export const deleteKid = async (req: CustomRequest, res: Response) => {
   try {
+    const { id } = req.params;
+
+    await KidModel.findByIdAndDelete(id);
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
       {},
-      AUTH_CONSTANTS.USER_FETCHED
+      AUTH_CONSTANTS.DELETED
+    );
+  } catch (err) {
+    return ResponseUtil.handleError(res, err);
+  }
+};
+export const filterTherapist = async (req: CustomRequest, res: Response) => {
+  try {
+    const { name, radius, speciality, lat, lng } = req.query;
+
+    const matchFilters: any = {
+      userType: "Therapist",
+      isProfileCompleted: true,
+    };
+
+    if (name) {
+      matchFilters.$or = [
+        { firstName: { $regex: name, $options: "i" } },
+        { lastName: { $regex: name, $options: "i" } },
+      ];
+    }
+
+    if (speciality) {
+      matchFilters["speciality.text"] = { $regex: speciality, $options: "i" };
+    }
+
+    let pipeline: any[] = [];
+
+    if (lat && lng) {
+      const radiusInMeters = Number(radius || 10) * 1000;
+      pipeline.push({
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [parseFloat(lng as string), parseFloat(lat as string)],
+          },
+          distanceField: "distance",
+          maxDistance: radiusInMeters,
+          spherical: true,
+        },
+      });
+    }
+
+    pipeline.push(
+      { $match: matchFilters },
+
+      {
+        $lookup: {
+          from: "reviews",
+          localField: "_id",
+          foreignField: "therapist",
+          as: "reviews",
+        },
+      },
+      {
+        $addFields: {
+          averageRating: {
+            $cond: {
+              if: { $gt: [{ $size: "$reviews" }, 0] },
+              then: { $avg: "$reviews.rating" },
+              else: 0,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          fullName: { $concat: ["$firstName", " ", "$lastName"] },
+          profilePicture: 1,
+          sessionCharges: 1,
+          averageRating: { $round: ["$averageRating", 1] },
+          _id: 1,
+        },
+      },
+      { $sort: { distance: 1, sessionCharges: 1, averageRating: -1 } },
+      { $limit: 50 }
+    );
+
+    const therapists = await UserModel.aggregate(pipeline);
+
+    return ResponseUtil.successResponse(
+      res,
+      STATUS_CODES.SUCCESS,
+      therapists,
+      "Therapists fetched successfully"
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);

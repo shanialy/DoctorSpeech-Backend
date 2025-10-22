@@ -15,24 +15,28 @@ import {
   reviewTherapist,
   updateLocation,
   getAvailableSlots,
+  filterTherapist,
+  markAsCompleted,
 } from "../controllers/userController";
 
 const router = Router();
 
 router.get("/home", checkAuth, home);
+router.get("/filter-therapist", checkAuth, filterTherapist);
 router.put("/updateLocation", checkAuth, updateLocation);
 router.get("/therapistDetails/:therapistId", checkAuth, getTherapistDetails);
 router.get("/therapistSlots/:therapistId", checkAuth, getAvailableSlots);
 router.post("/session", checkAuth, bookSession);
 router.get("/session", checkAuth, myBookings);
 router.get("/session/:id", checkAuth, bookingDetails);
+router.put("/session/:id", checkAuth, markAsCompleted);
 router.post("/reviewTherapist", checkAuth, reviewTherapist);
-router.post("/cancelBooking", checkAuth, cancelBooking);
+router.post("/cancelBooking/:id", checkAuth, cancelBooking);
 router.post("/resources", checkAuth, resources);
 router.post("/detailResource/:id", checkAuth, detailResource);
 router.get("/kid", checkAuth, listKid);
 router.post("/kid", checkAuth, addKid);
-router.delete("/kid", checkAuth, deleteKid);
+router.delete("/kid/:id", checkAuth, deleteKid);
 
 export default router;
 
