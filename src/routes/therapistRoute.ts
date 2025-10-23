@@ -3,24 +3,22 @@ import { checkAuth } from "../middleware/checkAuth";
 import {
   home,
   updateLocation,
-  bookingDetail,
-  cancelBooking,
-  earnings,
+  requestDetail,
+  respondSessionRequest,
+  markAsCompleted,
   myBookings,
-  respondBooking,
-  reviewUser,
 } from "../controllers/therapistController";
 
 const router = Router();
 
 router.get("/home", checkAuth, home);
 router.put("/updateLocation", checkAuth, updateLocation);
-router.put("/bookingDetail/:bookingId", checkAuth, bookingDetail);
-router.put("/cancelBooking/:bookingId", checkAuth, cancelBooking);
-router.put("/respondBooking/:bookingId", checkAuth, respondBooking);
-router.get("/myBookings", checkAuth, myBookings);
-router.post("/reviewUser", checkAuth, reviewUser);
-router.get("/listEarnings", checkAuth, earnings);
+router.put("/respond-session/:id", checkAuth, respondSessionRequest);
+router.get("/request-detail/:id", checkAuth, requestDetail);
+router.get("/session", checkAuth, myBookings);
+router.put("/session/:id", checkAuth, markAsCompleted);
+// router.post("/reviewUser", checkAuth, reviewUser);
+// router.get("/listEarnings", checkAuth, earnings);
 
 export default router;
 
