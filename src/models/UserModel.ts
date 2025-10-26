@@ -81,7 +81,7 @@ const UserSchema = new Schema(
       },
       coordinates: {
         type: [Schema.Types.Number],
-        default: [0, 0],
+        // default: [0, 0],
       },
       address: { type: Schema.Types.String, default: "" },
     },
