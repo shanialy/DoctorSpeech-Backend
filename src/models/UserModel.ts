@@ -78,10 +78,11 @@ const UserSchema = new Schema(
       type: {
         type: Schema.Types.String,
         enum: ["Point"],
+        default: "Point",
       },
       coordinates: {
         type: [Schema.Types.Number],
-        // default: [0, 0],
+        default: [0, 0],
       },
       address: { type: Schema.Types.String, default: "" },
     },
