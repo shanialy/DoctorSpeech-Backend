@@ -148,7 +148,7 @@ export const login = async (req: Request, res: Response) => {
     if (!user.isProfileCompleted) {
       return ResponseUtil.successResponse(
         res,
-        STATUS_CODES.BAD_REQUEST,
+        STATUS_CODES.SUCCESS,
         { token, user },
         AUTH_CONSTANTS.INCOMPLETE_PROFILE
       );
