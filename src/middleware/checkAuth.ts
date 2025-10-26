@@ -8,13 +8,13 @@ export const checkAuth = (
   res: Response,
   next: NextFunction
 ) => {
-  const tokenHeader = req.headers["authorization"];
+  const token = req.headers["authorization"];
 
-  if (!tokenHeader) {
+  if (!token) {
     return res.status(410).json({ message: "UnAuthorized Request" });
   }
 
-  const token = tokenHeader && tokenHeader.split(" ")[1];
+  // const token = tokenHeader && tokenHeader.split(" ")[1];
 
   jwt.verify(String(token), String(AuthConfig.JWT_SECRET), (err, decoded) => {
     if (err) {
