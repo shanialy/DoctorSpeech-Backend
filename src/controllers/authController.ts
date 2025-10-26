@@ -47,16 +47,17 @@ export const signup = async (req: Request, res: Response) => {
       password: hashPassword,
       userType,
     });
-    const otp = randomInt(100000, 999999);
+    // const otp = randomInt(100000, 999999);
+    const otp = 111111;
     await OtpModel.create({
       userId: user._id,
       otp: String(otp),
     });
-    const template = emailTemplateGeneric(otp);
+    // const template = emailTemplateGeneric(otp);
     let devices = await DeviceModel.find({ deviceToken });
 
     await Promise.all([
-      sendEmail(email, AUTH_CONSTANTS.VERIFICATION_CODE, template),
+      // sendEmail(email, AUTH_CONSTANTS.VERIFICATION_CODE, template),
       DeviceModel.deleteMany({ deviceToken }),
       UserModel.updateMany(
         {},
@@ -361,7 +362,8 @@ export const sendOtp = async (req: Request, res: Response) => {
         AUTH_CONSTANTS.USER_NOT_FOUND
       );
     }
-    const otp = randomInt(100000, 999999);
+    // const otp = randomInt(100000, 999999);
+    const otp = 111111;
     const model = await OtpModel.findOneAndUpdate(
       { userId: user._id },
       { otp: String(otp), expiry: new Date(Date.now() + 10 * 60 * 1000) }
@@ -372,8 +374,8 @@ export const sendOtp = async (req: Request, res: Response) => {
         otp: String(otp),
       });
     }
-    const template = emailTemplateGeneric(otp);
-    await sendEmail(email, AUTH_CONSTANTS.VERIFICATION_CODE, template);
+    // const template = emailTemplateGeneric(otp);
+    // await sendEmail(email, AUTH_CONSTANTS.VERIFICATION_CODE, template);
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
