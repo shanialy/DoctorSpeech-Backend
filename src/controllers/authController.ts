@@ -139,7 +139,7 @@ export const login = async (req: Request, res: Response) => {
     if (!user.isVerified) {
       return ResponseUtil.successResponse(
         res,
-        STATUS_CODES.BAD_REQUEST,
+        STATUS_CODES.SUCCESS,
         { user },
         AUTH_CONSTANTS.NOT_VERIFIED
       );
