@@ -29,6 +29,8 @@ export const home = async (req: CustomRequest, res: Response) => {
       {
         $match: {
           userType: "Therapist",
+          isProfileCompleted: true,
+          isSelectSlots: true,
         },
       },
       {
@@ -73,7 +75,11 @@ export const home = async (req: CustomRequest, res: Response) => {
               distanceField: "distance",
               maxDistance: maxDistanceInMeters,
               spherical: true,
-              query: { userType: "Therapist" },
+              query: {
+                userType: "Therapist",
+                isProfileCompleted: true,
+                isSelectSlots: true,
+              },
             },
           },
           { $match: { _id: { $ne: currentUser._id } } },
