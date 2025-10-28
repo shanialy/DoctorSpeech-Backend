@@ -31,6 +31,10 @@ const UserSchema = new Schema(
       type: Schema.Types.String,
       default: "",
     },
+    about: {
+      type: Schema.Types.String,
+      default: "",
+    },
     devices: [
       {
         type: Schema.Types.ObjectId,
