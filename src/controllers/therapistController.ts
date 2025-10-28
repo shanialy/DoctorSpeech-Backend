@@ -173,11 +173,58 @@ export const updateLocation = async (req: CustomRequest, res: Response) => {
 
 export const bookingDetail = async (req: CustomRequest, res: Response) => {
   try {
+    const { id } = req.params;
+
+    const booking: any = await BookingModel.findById(id)
+      .populate("bookedBy", "firstName lastName profilePicture gender")
+      .populate("slot", "day times")
+      .populate("forKid", "name age")
+      .lean();
+
+    if (!booking) {
+      return ResponseUtil.errorResponse(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        "Booking not found"
+      );
+    }
+
+    const selectedTime: any = booking.slot?.times?.find(
+      (t: any) => String(t._id) === String(booking.timeId)
+    );
+
+    const formattedBooking = {
+      _id: booking._id,
+      bookedBy: booking.bookedBy
+        ? {
+            id: booking.bookedBy._id,
+            name: `${booking.bookedBy.firstName} ${booking.bookedBy.lastName}`,
+            profilePicture: booking.bookedBy.profilePicture,
+          }
+        : null,
+      kid: booking.forKid
+        ? {
+            name: booking.forKid.name,
+            age: booking.forKid.age,
+          }
+        : null,
+      serviceType: booking.serviceType,
+      date: booking.date,
+      day: booking.slot?.day || "",
+      startTime: selectedTime?.startTime || "",
+      endTime: selectedTime?.endTime || "",
+      status: booking.status,
+      isPaid: booking.isPaid,
+      cancelReason: booking.cancelReason || "",
+      createdAt: booking.createdAt,
+      updatedAt: booking.updatedAt,
+    };
+
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
-      {},
-      AUTH_CONSTANTS.USER_FETCHED
+      formattedBooking,
+      "Booking details fetched successfully"
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);

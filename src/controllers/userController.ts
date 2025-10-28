@@ -442,6 +442,7 @@ export const bookingDetails = async (req: CustomRequest, res: Response) => {
       )
       .populate("slot", "day times")
       .populate("bookedBy", "firstName lastName profilePicture")
+      .populate("forKid", "name age")
       .lean();
 
     if (!booking) {
@@ -472,6 +473,12 @@ export const bookingDetails = async (req: CustomRequest, res: Response) => {
             id: booking.bookedBy._id,
             name: `${booking.bookedBy.firstName} ${booking.bookedBy.lastName}`,
             profilePicture: booking.bookedBy.profilePicture,
+          }
+        : null,
+      kid: booking.forKid
+        ? {
+            name: booking.forKid.name,
+            age: booking.forKid.age,
           }
         : null,
       serviceType: booking.serviceType,
