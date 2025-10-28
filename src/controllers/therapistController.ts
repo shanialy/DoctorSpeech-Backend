@@ -52,7 +52,7 @@ export const home = async (req: CustomRequest, res: Response) => {
       },
       { $unwind: "$bookedByUser" },
       { $sort: { date: 1, "selectedTime.startTime": 1 } },
-      { $limit: 2 },
+      // { $limit: 2 },
       {
         $project: {
           _id: 1,
