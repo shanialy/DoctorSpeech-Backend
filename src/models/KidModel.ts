@@ -13,6 +13,6 @@ const KidSchema = new Schema(
   }
 );
 
-const KidModel = model("Kids", KidSchema);
+const KidModel = model("Kid", KidSchema);
 
 export default KidModel;

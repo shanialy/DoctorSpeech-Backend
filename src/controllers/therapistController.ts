@@ -59,11 +59,13 @@ export const home = async (req: CustomRequest, res: Response) => {
           therapist: 1,
           date: 1,
           status: 1,
+          serviceType: 1,
           "selectedTime.startTime": 1,
           "selectedTime.endTime": 1,
           "bookedByUser.firstName": 1,
           "bookedByUser.lastName": 1,
           "bookedByUser.profilePicture": 1,
+          "bookedByUser.email": 1,
         },
       },
     ]);
@@ -331,6 +333,9 @@ export const requestDetail = async (req: CustomRequest, res: Response) => {
           "bookedByUser.firstName": 1,
           "bookedByUser.lastName": 1,
           "bookedByUser.profilePicture": 1,
+          "bookedByUser.countryCode": 1,
+          "bookedByUser.phoneNumber": 1,
+          "bookedByUser.email": 1,
 
           "kidData.name": 1,
           "kidData.age": 1,

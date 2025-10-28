@@ -260,16 +260,10 @@ export const getAvailableSlots = async (req: CustomRequest, res: Response) => {
       status: { $in: ["Pending", "Accepted"] },
     }).lean();
 
-    const bookedTimes: any = bookedSlots.map((b: any) => ({
-      startTime: b.startTime,
-      endTime: b.endTime,
-    }));
-
-    const availableTimes = slot.times.filter((time) => {
-      return !bookedTimes.some(
-        (b: any) => b.startTime === time.startTime && b.endTime === time.endTime
-      );
-    });
+    const bookedTimeIds = bookedSlots.map((b) => String(b.timeId));
+    const availableTimes = slot.times.filter(
+      (t: any) => !bookedTimeIds.includes(String(t._id))
+    );
 
     return ResponseUtil.successResponse(
       res,
@@ -372,7 +366,7 @@ export const myBookings = async (req: CustomRequest, res: Response) => {
     const userId = req.userId;
 
     const bookings = await BookingModel.find({ bookedBy: userId })
-      .populate("therapist", "firstName lastName profilePicture sessionCharges")
+      .populate("therapist", "firstName lastName profilePicture about")
       .populate("slot", "day times")
       .sort({ date: -1 });
 
@@ -390,7 +384,7 @@ export const myBookings = async (req: CustomRequest, res: Response) => {
               id: b.therapist._id,
               name: `${b.therapist.firstName} ${b.therapist.lastName}`,
               profilePicture: b.therapist.profilePicture,
-              sessionCharges: b.therapist.sessionCharges,
+              about: b.therapist.about,
             }
           : null,
         serviceType: b.serviceType,
@@ -449,7 +443,10 @@ export const bookingDetails = async (req: CustomRequest, res: Response) => {
         "firstName lastName profilePicture sessionCharges gender"
       )
       .populate("slot", "day times")
-      .populate("bookedBy", "firstName lastName profilePicture")
+      .populate(
+        "bookedBy",
+        "firstName lastName profilePicture countyCode phoneNumber email"
+      )
       .populate("forKid", "name age")
       .lean();
 
@@ -481,6 +478,9 @@ export const bookingDetails = async (req: CustomRequest, res: Response) => {
             id: booking.bookedBy._id,
             name: `${booking.bookedBy.firstName} ${booking.bookedBy.lastName}`,
             profilePicture: booking.bookedBy.profilePicture,
+            countryCode: booking.bookedBy?.countryCode,
+            phoneNumber: booking.bookedBy?.phoneNumber,
+            email: booking.bookedBy?.email,
           }
         : null,
       kid: booking.forKid
@@ -672,6 +672,7 @@ export const filterTherapist = async (req: CustomRequest, res: Response) => {
     const matchFilters: any = {
       userType: "Therapist",
       isProfileCompleted: true,
+      isSelectSlots: true,
     };
 
     if (name) {
@@ -729,6 +730,7 @@ export const filterTherapist = async (req: CustomRequest, res: Response) => {
           fullName: { $concat: ["$firstName", " ", "$lastName"] },
           profilePicture: 1,
           sessionCharges: 1,
+          about: 1,
           averageRating: { $round: ["$averageRating", 1] },
           _id: 1,
         },
