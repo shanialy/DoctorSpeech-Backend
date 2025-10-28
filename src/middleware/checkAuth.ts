@@ -14,11 +14,9 @@ export const checkAuth = (
     return res.status(410).json({ message: "UnAuthorized Request" });
   }
 
-  // const token = tokenHeader && tokenHeader.split(" ")[1];
-
   jwt.verify(String(token), String(AuthConfig.JWT_SECRET), (err, decoded) => {
     if (err) {
-      return res.status(410).json({ message: "Invalid Token" });
+      return res.status(440).json({ message: "Token Expired" });
     }
 
     const decodedPayload = decoded as JwtPayload;
