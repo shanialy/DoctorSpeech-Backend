@@ -175,7 +175,7 @@ export const getTherapistDetails = async (
   try {
     const { therapistId } = req.params;
     const therapist = await UserModel.findById(therapistId).select(
-      "-password -certifications -slots"
+      "-password -certifications -slots -devices"
     );
 
     if (!therapist) {
@@ -212,14 +212,14 @@ export const getTherapistDetails = async (
       reviews: {
         total: totalReviews,
         averageRating: Number(avgRating.toFixed(1)),
-        list: reviewsData,
+        listData: reviewsData,
       },
     };
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
       { therapistDetails },
-      AUTH_CONSTANTS.USER_FETCHED
+      "Therapist Fetched successfully"
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -231,32 +231,29 @@ export const getAvailableSlots = async (req: CustomRequest, res: Response) => {
     const { therapistId } = req.params;
     const { date } = req.query;
 
-    if (!date) {
-      return ResponseUtil.errorResponse(
-        res,
-        STATUS_CODES.BAD_REQUEST,
-        "Date is required"
-      );
-    }
+    const dateString =
+      (date as string) || new Date().toISOString().split("T")[0];
 
-    const givenDate = new Date(date as string);
-    const dayOfWeek = givenDate.toLocaleString("en-US", { weekday: "short" }); // e.g. "Monday"
+    const givenDate = new Date(dateString);
+    const dayOfWeek = givenDate.toLocaleString("en-US", { weekday: "short" });
 
     const slot = await SlotModel.findOne({
       therapist: therapistId,
       day: dayOfWeek,
     }).lean();
+
     if (!slot) {
-      return ResponseUtil.errorResponse(
+      return ResponseUtil.successResponse(
         res,
-        STATUS_CODES.NOT_FOUND,
-        "No slots found for this day"
+        STATUS_CODES.SUCCESS,
+        { date, day: dayOfWeek, availableTimes: [] },
+        "Available slots fetched successfully"
       );
     }
 
     const bookedSlots = await BookingModel.find({
       therapist: therapistId,
-      date: new Date(date as string),
+      date: new Date(dateString as string),
       status: { $in: ["Pending", "Accepted"] },
     }).lean();
 
@@ -398,8 +395,7 @@ export const myBookings = async (req: CustomRequest, res: Response) => {
     });
 
     const upcoming = formattedBookings.filter(
-      (b: any) =>
-        new Date(b.date) >= now && b.isPaid == true && b.status === "Accepted"
+      (b: any) => new Date(b.date) >= now && b.status === "Accepted"
     );
 
     const completed = formattedBookings.filter(
@@ -440,7 +436,7 @@ export const bookingDetails = async (req: CustomRequest, res: Response) => {
     const booking: any = await BookingModel.findById(id)
       .populate(
         "therapist",
-        "firstName lastName profilePicture sessionCharges gender"
+        "firstName lastName profilePicture sessionCharges gender email phoneNumber about"
       )
       .populate("slot", "day times")
       .populate(
@@ -469,8 +465,11 @@ export const bookingDetails = async (req: CustomRequest, res: Response) => {
             id: booking.therapist._id,
             name: `${booking.therapist.firstName} ${booking.therapist.lastName}`,
             profilePicture: booking.therapist.profilePicture,
+            email: booking.therapist.email,
             gender: booking.therapist.gender,
             sessionCharges: booking.therapist.sessionCharges,
+            phoneNumber: booking.therapist?.phoneNumber,
+            about: booking.therapist?.about,
           }
         : null,
       bookedBy: booking.bookedBy

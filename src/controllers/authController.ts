@@ -260,9 +260,6 @@ export const createProfile = async (req: any, res: Response) => {
     ) {
       profilePicture = req.filesInfo.profilePicture[0].url;
     }
-    // ForUser gender age firstName lastName phoneNumber about
-    // ForTherapist gender age firstName lastName phoneNumber about certifications availibility
-    // const profilePicture = makeURL(req.file.filename as any);
 
     let user: any;
     if (req.userType == "User") {
@@ -279,6 +276,17 @@ export const createProfile = async (req: any, res: Response) => {
     if (req.userType == "Therapist") {
       let addedSlots = false;
       const { certifications, slots, ...rest } = req.body;
+      if (
+        rest["speciality.text"] &&
+        typeof rest["speciality.text"] === "string"
+      ) {
+        try {
+          rest["speciality.text"] = JSON.parse(rest["speciality.text"]);
+        } catch (err) {
+          console.error("Invalid speciality.text JSON:", err);
+          rest["speciality.text"] = []; // fallback to empty array if parsing fails
+        }
+      }
       const parsedCertifications = JSON.parse(certifications);
       const parsedSlots = JSON.parse(slots);
       const uploadedMedia = req.filesInfo?.certificationMedia || [];
@@ -299,14 +307,18 @@ export const createProfile = async (req: any, res: Response) => {
           });
         })
       );
-      const slotDocs = parsedSlots.map((slot: any) => ({
-        therapist: req.userId,
-        day: slot.day,
-        times: slot.times.map((time: any) => ({
-          startTime: time.startTime,
-          endTime: time.endTime,
-        })),
-      }));
+      const slotDocs = parsedSlots
+        .filter(
+          (slot: any) => Array.isArray(slot.times) && slot.times.length > 0
+        )
+        .map((slot: any) => ({
+          therapist: req.userId,
+          day: slot.day,
+          times: slot.times.map((time: any) => ({
+            startTime: time.startTime,
+            endTime: time.endTime,
+          })),
+        }));
 
       if (slotDocs.length > 0) {
         addedSlots = true;
