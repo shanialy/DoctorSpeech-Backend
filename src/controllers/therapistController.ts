@@ -335,6 +335,7 @@ export const requestDetail = async (req: CustomRequest, res: Response) => {
           "bookedByUser.profilePicture": 1,
           "bookedByUser.countryCode": 1,
           "bookedByUser.phoneNumber": 1,
+          "bookedByUser.about": 1,
           "bookedByUser.email": 1,
 
           "kidData.name": 1,
