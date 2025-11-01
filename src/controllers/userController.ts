@@ -10,6 +10,7 @@ import ReviewModel from "../models/ReviewModel";
 import BookingModel from "../models/BookingModel";
 import KidModel from "../models/KidModel";
 import ResourceModel from "../models/ResourceModel";
+import EbookModel from "../models/EbookModel";
 
 export const home = async (req: CustomRequest, res: Response) => {
   try {
@@ -601,14 +602,44 @@ export const resources = async (req: CustomRequest, res: Response) => {
     return ResponseUtil.handleError(res, err);
   }
 };
-
-export const detailResource = async (req: CustomRequest, res: Response) => {
+export const ebooks = async (req: CustomRequest, res: Response) => {
   try {
-    const resource = await ResourceModel.findById(req.params.id);
+    const ebooks = await EbookModel.find();
+
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
-      { resource },
+      { ebooks },
+      AUTH_CONSTANTS.FETCHED
+    );
+  } catch (err) {
+    return ResponseUtil.handleError(res, err);
+  }
+};
+
+export const detailResource = async (req: CustomRequest, res: Response) => {
+  try {
+    const resource = await ResourceModel.findById(req.params.id).lean();
+
+    const groupedByAcquisitionAge = resource?.alphabets.reduce(
+      (acc: any, alphabet: any) => {
+        const age = alphabet.acquisitionAge;
+        if (!acc[age]) acc[age] = [];
+        acc[age].push(alphabet);
+        return acc;
+      },
+      {}
+    );
+
+    // Replace alphabets with grouped structure
+    const updatedResource = {
+      ...resource,
+      alphabets: groupedByAcquisitionAge,
+    };
+    return ResponseUtil.successResponse(
+      res,
+      STATUS_CODES.SUCCESS,
+      { resource: updatedResource },
       AUTH_CONSTANTS.FETCHED
     );
   } catch (err) {

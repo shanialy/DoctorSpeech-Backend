@@ -3,6 +3,7 @@ import ResponseUtil from "../utils/Response/responseUtils";
 import { AUTH_CONSTANTS } from "../constants/messages";
 import { STATUS_CODES } from "../constants/statusCodes";
 import ResourceModel from "../models/ResourceModel";
+import EbookModel from "../models/EbookModel";
 
 export const createResource = async (req: any, res: Response) => {
   try {
@@ -113,6 +114,48 @@ export const createResource = async (req: any, res: Response) => {
       STATUS_CODES.SUCCESS,
       resource,
       "Resource updated successfully"
+    );
+  } catch (err) {
+    return ResponseUtil.handleError(res, err);
+  }
+};
+export const createEbook = async (req: any, res: Response) => {
+  try {
+    let ebookPicture;
+    let authorPicture;
+    let ebookURL;
+
+    // Handle file uploads (frontView, fullView, sideView)
+    if (req.filesInfo) {
+      if (req.filesInfo.bookImage?.length) {
+        ebookPicture = req.filesInfo.bookImage[0].url;
+      }
+      if (req.filesInfo.authorImage?.length) {
+        authorPicture = req.filesInfo.authorImage[0].url;
+      }
+      if (req.filesInfo.ebook?.length) {
+        ebookURL = req.filesInfo.ebook[0].url;
+      }
+    }
+
+    const authorDetails = {
+      name: "Author: Dr. Dominese Robinson",
+      picture: authorPicture,
+    };
+
+    await EbookModel.create({
+      authorDetails,
+      description: req.body.description,
+      title: req.body.title,
+      picture: ebookPicture,
+      url: ebookURL,
+    });
+
+    return ResponseUtil.successResponse(
+      res,
+      STATUS_CODES.SUCCESS,
+      {},
+      "Book added successfully"
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);

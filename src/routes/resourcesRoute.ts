@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createResource } from "../controllers/resourceController";
+import { createEbook, createResource } from "../controllers/resourceController";
 import { handleMediaFilesS3Resource } from "../middleware/handleMediaFilesS3Resource";
 
 const router = Router();
@@ -12,6 +12,16 @@ router.post(
     { name: "sideView", maxCount: 1 },
   ]),
   createResource
+);
+
+router.post(
+  "/ebook",
+  handleMediaFilesS3Resource([
+    { name: "bookImage", maxCount: 1 },
+    { name: "authorImage", maxCount: 1 },
+    { name: "ebook", maxCount: 1 },
+  ]),
+  createEbook
 );
 
 export default router;

@@ -17,6 +17,7 @@ import {
   getAvailableSlots,
   filterTherapist,
   markAsCompleted,
+  ebooks,
 } from "../controllers/userController";
 
 const router = Router();
@@ -33,6 +34,7 @@ router.put("/session/:id", checkAuth, markAsCompleted);
 router.post("/reviewTherapist", checkAuth, reviewTherapist);
 router.post("/cancelBooking/:id", checkAuth, cancelBooking);
 router.get("/resources", checkAuth, resources);
+router.get("/ebooks", checkAuth, ebooks);
 router.get("/detailResource/:id", checkAuth, detailResource);
 router.get("/kid", checkAuth, listKid);
 router.post("/kid", checkAuth, addKid);
