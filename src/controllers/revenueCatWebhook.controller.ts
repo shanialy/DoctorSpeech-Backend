@@ -6,10 +6,10 @@ export const handleRevenueCatWebhook = async (req: Request, res: Response) => {
     const json = JSON.parse(req.body.toString());
     console.log("RevenueCat Webhook received:", json);
     const { event } = json;
-    // const userId = event.app_user_id || event.original_app_user_id;
-    const userId = "6907ceca3f4c940d47257ea6";
-    // const eventType = event.type || event.event;
-    const eventType = "INITIAL_PURCHASE";
+    const userId = event.app_user_id || event.original_app_user_id;
+    // const userId = "6907ceca3f4c940d47257ea6";
+    const eventType = event.type || event.event;
+    // const eventType = "INITIAL_PURCHASE";
     // const userId = subscriber?.subscriber_id;
 
     const user: any = await UserModel.findById(userId);
