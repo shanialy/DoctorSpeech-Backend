@@ -253,7 +253,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
 export const createProfile = async (req: any, res: Response) => {
   try {
-    let profilePicture = undefined;
+    let profilePicture = "";
 
     if (
       req.filesInfo &&

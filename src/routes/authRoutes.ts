@@ -24,10 +24,13 @@ router.post("/signup", signup);
 router.post(
   "/create-profile",
   checkAuth,
-  handleMediaFilesS3([
-    { name: "profilePicture", maxCount: 1 },
-    { name: "certificationMedia", maxCount: 5 },
-  ]),
+  handleMediaFilesS3(
+    [
+      { name: "profilePicture", maxCount: 1 },
+      { name: "certificationMedia", maxCount: 5 },
+    ],
+    { optional: true }
+  ),
   createProfile
 );
 router.put(
