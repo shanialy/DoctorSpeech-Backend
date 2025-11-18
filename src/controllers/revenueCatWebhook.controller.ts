@@ -7,8 +7,10 @@ export const handleRevenueCatWebhook = async (req: Request, res: Response) => {
     console.log("RevenueCat Webhook received:", json);
     const { event } = json;
     const userId = event.app_user_id || event.original_app_user_id;
+    console.log("USERID", userId)
     // const userId = "6907ceca3f4c940d47257ea6";
     const eventType = event.type || event.event;
+    console.log("EVENT TYPE",eventType)
     // const eventType = "INITIAL_PURCHASE";
     // const userId = subscriber?.subscriber_id;
 
