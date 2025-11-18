@@ -10,10 +10,8 @@ export const handleRevenueCatWebhook = async (req: Request, res: Response) => {
     const userId = event.app_user_id || event.original_app_user_id;
     console.log("USERID", userId)
     const convertedId = new mongoose.Types.ObjectId(userId)
-    // const userId = "6907ceca3f4c940d47257ea6";
-    const eventType = event.type || event.event;
+    const eventType = event.type
     console.log("EVENT TYPE",eventType)
-    // const eventType = "INITIAL_PURCHASE";
 
     const user: any = await UserModel.findById(convertedId);
     if (!user) return res.status(404).send("User not found");
@@ -24,7 +22,7 @@ export const handleRevenueCatWebhook = async (req: Request, res: Response) => {
       eventType === "CANCELLATION" ||
       eventType === "DID_FAIL_TO_RENEW"
     ) {
-      user.type = "PREMIUM";
+      user.type = "FREEMIUM";
     }
 
     await user.save();
