@@ -28,6 +28,7 @@ import CertificationModel from "../models/CertificationModel";
 import SlotModel from "../models/SlotModel";
 import BookingModel from "../models/BookingModel";
 import ReviewModel from "../models/ReviewModel";
+import jwt from "jsonwebtoken";
 
 export const signup = async (req: Request, res: Response) => {
   try {
@@ -652,128 +653,81 @@ export const deleteAccount = async (req: CustomRequest, res: Response) => {
   }
 };
 
-// export const socialLogin = async (req: CustomRequest, res: Response) => {
-//   try {
-//     const { accessToken, deviceToken, deviceType, provider } = req.body;
-//     const userDetailsFromToken: any = jwt.decode(accessToken);
-//     if (!userDetailsFromToken || !userDetailsFromToken.email_verified) {
-//       return ResponseUtil.errorResponse(
-//         res,
-//         STATUS_CODES.BAD_REQUEST,
-//         "Invalid credentials"
-//       );
-//     }
+export const socialLogin = async (req: CustomRequest, res: Response) => {
+  try {
+    const { accessToken, deviceToken, deviceType, provider } = req.body;
+    const userDetailsFromToken: any = jwt.decode(accessToken);
+    if (!userDetailsFromToken || !userDetailsFromToken.email_verified) {
+      return ResponseUtil.errorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid credentials"
+      );
+    }
 
-//     let user: any = await UserModel.findOne({
-//       email: userDetailsFromToken.email,
-//     })
-//       .select("-blocked -devices")
-//       .populate([
-//         {
-//           path: "posts",
-//           populate: [
-//             { path: "user", select: USER_DETAILS },
-//             { path: "likes.user", select: USER_DETAILS },
-//             {
-//               path: "comments.user",
-//               select: USER_DETAILS,
-//             },
-//             {
-//               path: "comments.replies.user",
-//               select: USER_DETAILS,
-//             },
-//           ],
-//         },
-//         {
-//           path: "partner",
-//           populate: {
-//             path: "shorts",
-//           },
-//           select: REMOVE_PARTNER_FIELDS,
-//         },
-//       ])
-//       .populate("shorts");
+    let user: any = await UserModel.findOne({
+      email: userDetailsFromToken.email,
+    });
 
-//     if (!user) {
-//       user = await UserModel.create({
-//         providerId: userDetailsFromToken.sub,
-//         provider: provider,
-//         email: userDetailsFromToken.email,
-//         name: userDetailsFromToken.given_name,
-//         isVerified: true,
-//         profilePicture: userDetailsFromToken.picture,
-//       });
-//     }
+    if (!user) {
+      user = await UserModel.create({
+        provider: provider,
+        email: userDetailsFromToken.email,
+        isVerified: true,
+      });
+    }
 
-//     let devices = await DeviceModel.find({ deviceToken });
-//     await Promise.all([
-//       DeviceModel.deleteMany({ deviceToken }),
-//       UserModel.updateMany(
-//         {},
-//         {
-//           $pull: { devices: { $in: devices.map((d) => d._id) } },
-//         }
-//         // { new: true }
-//       ),
-//     ]);
+    let devices = await DeviceModel.find({ deviceToken });
+    await Promise.all([
+      DeviceModel.deleteMany({ deviceToken }),
+      UserModel.updateMany(
+        {},
+        {
+          $pull: { devices: { $in: devices.map((d) => d._id) } },
+        }
+        // { new: true }
+      ),
+    ]);
 
-//     const device = await DeviceModel.create({
-//       deviceToken,
-//       deviceType,
-//       user: String(user._id),
-//     });
+    const device = await DeviceModel.create({
+      deviceToken,
+      deviceType,
+      user: String(user._id),
+    });
 
-//     await UserModel.findByIdAndUpdate(
-//       user._id,
-//       {
-//         $addToSet: { devices: device._id },
-//       },
-//       { new: true }
-//     );
+    await UserModel.findByIdAndUpdate(
+      user._id,
+      {
+        $addToSet: { devices: device._id },
+      },
+      { new: true }
+    );
 
-//     const token = generateToken({
-//       email: String(user.email),
-//       id: String(user._id),
-//       name: String(user.name),
-//     });
+    const token = generateToken({
+      email: userDetailsFromToken.email,
+      id: String(user._id),
+      userType: "User",
+    });
 
-//     if (!user.isProfileCompleted) {
-//       return ResponseUtil.successResponse(
-//         res,
-//         STATUS_CODES.BAD_REQUEST,
-//         { token },
-//         AUTH_CONSTANTS.INCOMPLETE_PROFILE
-//       );
-//     }
+    if (!user.isProfileCompleted) {
+      return ResponseUtil.successResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        { token, user },
+        AUTH_CONSTANTS.INCOMPLETE_PROFILE
+      );
+    }
 
-//     user = user.toObject();
-//     delete user.password;
+    user = user.toObject();
+    delete user.password;
 
-//     const posts = user.posts.map((post: any) => {
-//       const likedByOwn = post.likes.find(
-//         (like: any) => like.user._id.toString() === user._id.toString()
-//       );
-//       return {
-//         ...post,
-//         likedByOwn: { type: likedByOwn ? likedByOwn.type : null },
-//       };
-//     });
-
-//     if (user.partner) {
-//       const matchPercentage = calculateMatchPercentage(user, user.partner);
-//       user.partner = {
-//         user: user.partner,
-//         matchPercentage: matchPercentage,
-//       };
-//     }
-
-//     return ResponseUtil.successResponse(
-//       res,
-//       STATUS_CODES.SUCCESS,
-//       { user: { ...user, posts }, token },
-//       AUTH_CONSTANTS.LOGGED_IN
-//     );
-//   } catch (error) {
-//     return ResponseUtil.handleError(res, error);
-//   }
-// };
+    return ResponseUtil.successResponse(
+      res,
+      STATUS_CODES.SUCCESS,
+      { user, token },
+      AUTH_CONSTANTS.LOGGED_IN
+    );
+  } catch (error) {
+    return ResponseUtil.handleError(res, error);
+  }
+};

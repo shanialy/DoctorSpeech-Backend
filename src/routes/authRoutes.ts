@@ -10,7 +10,7 @@ import {
   resetPassword,
   sendOtp,
   signup,
-  // socialLogin,
+  socialLogin,
   updateProfile,
   verifyOtp,
 } from "../controllers/authController";
@@ -42,7 +42,7 @@ router.put(
   updateProfile
 );
 router.post("/login", login);
-// router.post("/social-login", socialLogin);
+router.post("/social-login", socialLogin);
 router.post("/verify-otp", verifyOtp);
 router.post("/send-otp", sendOtp);
 router.get("/profile", checkAuth, getProfile);
