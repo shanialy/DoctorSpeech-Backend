@@ -674,8 +674,8 @@ export const ebooks = async (req: CustomRequest, res: Response) => {
 export const detailResource = async (req: CustomRequest, res: Response) => {
   try {
     let userCategory: any = "FREEMIUM";
-    const user = await UserModel.findById(req.userId).select("type");
-    if (user) {
+    if (req.userId) {
+      const user: any = await UserModel.findById(req.userId).select("type");
       userCategory = user.type;
     }
     let updatedResource: any = {};
