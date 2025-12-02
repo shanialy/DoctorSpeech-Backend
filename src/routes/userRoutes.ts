@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { checkAuth } from "../middleware/checkAuth";
+import { checkAuth, optionalAuth } from "../middleware/checkAuth";
 import {
   home,
   addKid,
@@ -33,9 +33,9 @@ router.get("/session/:id", checkAuth, bookingDetails);
 router.put("/session/:id", checkAuth, markAsCompleted);
 router.post("/reviewTherapist", checkAuth, reviewTherapist);
 router.post("/cancelBooking/:id", checkAuth, cancelBooking);
-router.get("/resources", checkAuth, resources);
+router.get("/resources", optionalAuth, resources);
 router.get("/ebooks", checkAuth, ebooks);
-router.get("/detailResource/:id", checkAuth, detailResource);
+router.get("/detailResource/:id", optionalAuth, detailResource);
 router.get("/kid", checkAuth, listKid);
 router.post("/kid", checkAuth, addKid);
 router.delete("/kid/:id", checkAuth, deleteKid);

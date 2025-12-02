@@ -673,9 +673,11 @@ export const ebooks = async (req: CustomRequest, res: Response) => {
 
 export const detailResource = async (req: CustomRequest, res: Response) => {
   try {
-    const userCategory: any = await UserModel.findById(req.userId).select(
-      "type"
-    );
+    let userCategory: any = "FREEMIUM";
+    const user = await UserModel.findById(req.userId).select("type");
+    if (user) {
+      userCategory = user.type;
+    }
     let updatedResource: any = {};
     const resource: any = await ResourceModel.findById(req.params.id).lean();
     const groupedByAcquisitionAge = resource?.alphabets.reduce(
@@ -692,7 +694,6 @@ export const detailResource = async (req: CustomRequest, res: Response) => {
 
     if (userCategory.type == "FREEMIUM") {
       if (req.params.id === SPECIAL_ID) {
-        // ⭐ Special case → Everything free for FREEMIUM
         for (const age in groupedByAcquisitionAge) {
           groupedByAcquisitionAge[age] = groupedByAcquisitionAge[age].map(
             (alpha: any) => ({
