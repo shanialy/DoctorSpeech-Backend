@@ -97,8 +97,9 @@ export const signup = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password, deviceToken, deviceType, userType } =
-      loginSchema.parse(req.body);
+    const { email, password, deviceToken, deviceType } = loginSchema.parse(
+      req.body
+    );
     let user: any = await UserModel.findOne({ email });
 
     if (!user) {
@@ -119,13 +120,13 @@ export const login = async (req: Request, res: Response) => {
       );
     }
 
-    if (user.userType != userType) {
-      return ResponseUtil.errorResponse(
-        res,
-        STATUS_CODES.NOT_FOUND,
-        "User not Found"
-      );
-    }
+    // if (user.userType != userType) {
+    //   return ResponseUtil.errorResponse(
+    //     res,
+    //     STATUS_CODES.NOT_FOUND,
+    //     "User not Found"
+    //   );
+    // }
     const token = generateToken({
       email: email,
       id: String(user._id),
@@ -134,9 +135,9 @@ export const login = async (req: Request, res: Response) => {
 
     user = user.toObject();
     delete user.password;
-    delete user.devices;
-    delete user.workingSlots;
-    delete user.certifications;
+    // delete user.devices;
+    // delete user.workingSlots;
+    // delete user.certifications;
 
     if (!user.isVerified) {
       return ResponseUtil.successResponse(
@@ -262,95 +263,95 @@ export const createProfile = async (req: any, res: Response) => {
     ) {
       profilePicture = req.filesInfo.profilePicture[0].url;
     }
-    if (req.body.latitude && req.body.longitude) {
-      req.body["location"] = {
-        type: "Point",
-        coordinates: [
-          parseFloat(req.body.longitude),
-          parseFloat(req.body.latitude),
-        ],
-        address: req.body.address || "",
-      };
-    }
+    // if (req.body.latitude && req.body.longitude) {
+    //   req.body["location"] = {
+    //     type: "Point",
+    //     coordinates: [
+    //       parseFloat(req.body.longitude),
+    //       parseFloat(req.body.latitude),
+    //     ],
+    //     address: req.body.address || "",
+    //   };
+    // }
     let user: any;
-    if (req.userType == "User") {
-      user = await UserModel.findByIdAndUpdate(
-        req.userId,
-        {
-          ...req.body,
-          isProfileCompleted: true,
-          profilePicture,
-        },
-        { new: true }
-      );
-    }
-    if (req.userType == "Therapist") {
-      let addedSlots = false;
-      const { certifications, slots, latitude, longitude, address, ...rest } =
-        req.body;
-      if (
-        rest["speciality.text"] &&
-        typeof rest["speciality.text"] === "string"
-      ) {
-        try {
-          rest["speciality.text"] = JSON.parse(rest["speciality.text"]);
-        } catch (err) {
-          console.error("Invalid speciality.text JSON:", err);
-          rest["speciality.text"] = []; // fallback to empty array if parsing fails
-        }
-      }
-      const parsedCertifications = JSON.parse(certifications);
-      const parsedSlots = JSON.parse(slots);
-      const uploadedMedia = req.filesInfo?.certificationMedia || [];
-      await Promise.all(
-        parsedCertifications.map(async (cert: any, index: number) => {
-          const file = uploadedMedia[index];
-          return await CertificationModel.create({
-            user: req.userId,
-            degreeName: cert.degreeName,
-            instituteName: cert.instituteName,
-            completionYear: cert.completionYear,
-            media: file
-              ? {
-                  mediaType: file.contentType,
-                  url: file.url,
-                }
-              : undefined,
-          });
-        })
-      );
-      const slotDocs = parsedSlots
-        .filter(
-          (slot: any) => Array.isArray(slot.times) && slot.times.length > 0
-        )
-        .map((slot: any) => ({
-          therapist: req.userId,
-          day: slot.day,
-          times: slot.times.map((time: any) => ({
-            startTime: time.startTime,
-            endTime: time.endTime,
-          })),
-        }));
+    // if (req.userType == "User") {
+    user = await UserModel.findByIdAndUpdate(
+      req.userId,
+      {
+        ...req.body,
+        isProfileCompleted: true,
+        profilePicture,
+      },
+      { new: true }
+    );
+    // }
+    // if (req.userType == "Therapist") {
+    //   let addedSlots = false;
+    //   const { certifications, slots, latitude, longitude, address, ...rest } =
+    //     req.body;
+    //   if (
+    //     rest["speciality.text"] &&
+    //     typeof rest["speciality.text"] === "string"
+    //   ) {
+    //     try {
+    //       rest["speciality.text"] = JSON.parse(rest["speciality.text"]);
+    //     } catch (err) {
+    //       console.error("Invalid speciality.text JSON:", err);
+    //       rest["speciality.text"] = []; // fallback to empty array if parsing fails
+    //     }
+    //   }
+    //   const parsedCertifications = JSON.parse(certifications);
+    //   const parsedSlots = JSON.parse(slots);
+    //   const uploadedMedia = req.filesInfo?.certificationMedia || [];
+    //   await Promise.all(
+    //     parsedCertifications.map(async (cert: any, index: number) => {
+    //       const file = uploadedMedia[index];
+    //       return await CertificationModel.create({
+    //         user: req.userId,
+    //         degreeName: cert.degreeName,
+    //         instituteName: cert.instituteName,
+    //         completionYear: cert.completionYear,
+    //         media: file
+    //           ? {
+    //               mediaType: file.contentType,
+    //               url: file.url,
+    //             }
+    //           : undefined,
+    //       });
+    //     })
+    //   );
+    //   const slotDocs = parsedSlots
+    //     .filter(
+    //       (slot: any) => Array.isArray(slot.times) && slot.times.length > 0
+    //     )
+    //     .map((slot: any) => ({
+    //       therapist: req.userId,
+    //       day: slot.day,
+    //       times: slot.times.map((time: any) => ({
+    //         startTime: time.startTime,
+    //         endTime: time.endTime,
+    //       })),
+    //     }));
 
-      if (slotDocs.length > 0) {
-        addedSlots = true;
-        await SlotModel.insertMany(slotDocs);
-      }
+    //   if (slotDocs.length > 0) {
+    //     addedSlots = true;
+    //     await SlotModel.insertMany(slotDocs);
+    //   }
 
-      user = await UserModel.findByIdAndUpdate(
-        req.userId,
-        {
-          ...rest,
-          ...(rest.sessionCharges && {
-            sessionCharges: Number(rest.sessionCharges),
-          }),
-          isProfileCompleted: true,
-          profilePicture,
-          isSelectSlots: addedSlots,
-        },
-        { new: true }
-      );
-    }
+    //   user = await UserModel.findByIdAndUpdate(
+    //     req.userId,
+    //     {
+    //       ...rest,
+    //       ...(rest.sessionCharges && {
+    //         sessionCharges: Number(rest.sessionCharges),
+    //       }),
+    //       isProfileCompleted: true,
+    //       profilePicture,
+    //       isSelectSlots: addedSlots,
+    //     },
+    //     { new: true }
+    //   );
+    // }
 
     const token = generateToken({
       email: String(user.email),
@@ -360,9 +361,9 @@ export const createProfile = async (req: any, res: Response) => {
 
     user = user.toObject();
     delete user.password;
-    delete user.devices;
-    delete user.workingSlots;
-    delete user.certifications;
+    // delete user.devices;
+    // delete user.workingSlots;
+    // delete user.certifications;
 
     return ResponseUtil.successResponse(
       res,
@@ -425,14 +426,14 @@ export const getProfile = async (req: CustomRequest, res: Response) => {
 
     user = user.toObject();
     delete user.password;
-    delete user.devices;
-    delete user.certifications;
+    // delete user.devices;
+    // delete user.certifications;
 
-    if (req.userType == "Therapist") {
-      user.workingSlots = await SlotModel.find({
-        therapist: req.userId,
-      }).lean();
-    }
+    // if (req.userType == "Therapist") {
+    //   user.workingSlots = await SlotModel.find({
+    //     therapist: req.userId,
+    //   }).lean();
+    // }
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
@@ -497,31 +498,31 @@ export const updateProfile = async (req: any, res: Response) => {
       req["body"]["profilePicture"] = profilePicture;
     }
 
-    if (req.body.latitude && req.body.longitude) {
-      req.body["location"] = {
-        type: "Point",
-        coordinates: [
-          parseFloat(req.body.longitude),
-          parseFloat(req.body.latitude),
-        ],
-        address: req.body.address || "",
-      };
-    }
+    // if (req.body.latitude && req.body.longitude) {
+    //   req.body["location"] = {
+    //     type: "Point",
+    //     coordinates: [
+    //       parseFloat(req.body.longitude),
+    //       parseFloat(req.body.latitude),
+    //     ],
+    //     address: req.body.address || "",
+    //   };
+    // }
 
-    const { latitude, longitude, address, ...rest } = req.body;
+    // const { latitude, longitude, address, ...rest } = req.body;
 
     let user: any = await UserModel.findByIdAndUpdate(
       req.userId,
       {
-        ...rest,
+        ...req.body,
       },
       { new: true }
     );
     user = user.toObject();
     delete user.password;
-    delete user.devices;
-    delete user.workingSlots;
-    delete user.certifications;
+    // delete user.devices;
+    // delete user.workingSlots;
+    // delete user.certifications;
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,

@@ -22,7 +22,7 @@ export const loginSchema: ZodSchema<{
   password: string;
   deviceToken: string;
   deviceType: string;
-  userType: string;
+  // userType: string;
 }> = z.object({
   email: z.string().email("Invalid email format").max(255),
   password: z
@@ -31,7 +31,7 @@ export const loginSchema: ZodSchema<{
     .max(100),
   deviceToken: z.string(),
   deviceType: z.enum(["Android", "IOS", "Postman"]),
-  userType: z.enum(["User", "Therapist"]),
+  // userType: z.enum(["User", "Therapist"]),
 });
 
 export const otpVerifySchema: ZodSchema<{
