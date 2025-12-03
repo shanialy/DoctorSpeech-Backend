@@ -34,7 +34,7 @@ router.put("/session/:id", checkAuth, markAsCompleted);
 router.post("/reviewTherapist", checkAuth, reviewTherapist);
 router.post("/cancelBooking/:id", checkAuth, cancelBooking);
 router.get("/resources", optionalAuth, resources);
-router.get("/ebooks", checkAuth, ebooks);
+router.get("/ebooks", optionalAuth, ebooks);
 router.get("/detailResource/:id", optionalAuth, detailResource);
 router.get("/kid", checkAuth, listKid);
 router.post("/kid", checkAuth, addKid);
