@@ -692,7 +692,7 @@ export const detailResource = async (req: CustomRequest, res: Response) => {
     const allAlphabets = resource.alphabets;
     const SPECIAL_ID = "69051b397df4f2efa0a10494";
 
-    if (userCategory.type == "FREEMIUM") {
+    if (userCategory == "FREEMIUM") {
       if (req.params.id === SPECIAL_ID) {
         for (const age in groupedByAcquisitionAge) {
           groupedByAcquisitionAge[age] = groupedByAcquisitionAge[age].map(
