@@ -718,13 +718,13 @@ export const socialLogin = async (req: CustomRequest, res: Response) => {
     //   );
     // }
 
-    // user = user.toObject();
-    // delete user.password;
+    user = user.toObject();
+    delete user.password;
 
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
-      { token },
+      { token, user },
       AUTH_CONSTANTS.LOGGED_IN
     );
   } catch (error) {
