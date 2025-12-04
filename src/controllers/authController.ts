@@ -709,22 +709,22 @@ export const socialLogin = async (req: CustomRequest, res: Response) => {
       userType: "User",
     });
 
-    if (!user.isProfileCompleted) {
-      return ResponseUtil.successResponse(
-        res,
-        STATUS_CODES.BAD_REQUEST,
-        { token, user },
-        AUTH_CONSTANTS.INCOMPLETE_PROFILE
-      );
-    }
+    // if (!user.isProfileCompleted) {
+    //   return ResponseUtil.successResponse(
+    //     res,
+    //     STATUS_CODES.BAD_REQUEST,
+    //     { token, user },
+    //     AUTH_CONSTANTS.INCOMPLETE_PROFILE
+    //   );
+    // }
 
-    user = user.toObject();
-    delete user.password;
+    // user = user.toObject();
+    // delete user.password;
 
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
-      { user, token },
+      { token },
       AUTH_CONSTANTS.LOGGED_IN
     );
   } catch (error) {
