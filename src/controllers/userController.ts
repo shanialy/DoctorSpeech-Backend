@@ -662,14 +662,12 @@ export const ebooks = async (req: CustomRequest, res: Response) => {
     if (req.userId) {
       userType = await UserModel.findById(req.userId).select("type");
     }
-    const ebooks = await EbookModel.find().lean();
+    let ebooks = await EbookModel.find().lean();
 
-    ebooks.map((item) => {
-      return {
-        ...item,
-        is_locked: userType === "FREEMIUM" ? true : false,
-      };
-    });
+    ebooks = ebooks.map((item) => ({
+      ...item,
+      is_locked: userType === "FREEMIUM" ? true : false,
+    }));
 
     return ResponseUtil.successResponse(
       res,
