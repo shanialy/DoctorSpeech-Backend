@@ -658,7 +658,18 @@ export const resources = async (req: CustomRequest, res: Response) => {
 };
 export const ebooks = async (req: CustomRequest, res: Response) => {
   try {
-    const ebooks = await EbookModel.find();
+    let userType: any = "FREEMIUM";
+    if (req.userId) {
+      userType = await UserModel.findById(req.userId).select("type");
+    }
+    const ebooks = await EbookModel.find().lean();
+
+    ebooks.map((item) => {
+      return {
+        ...item,
+        is_locked: userType === "FREEMIUM" ? true : false,
+      };
+    });
 
     return ResponseUtil.successResponse(
       res,
