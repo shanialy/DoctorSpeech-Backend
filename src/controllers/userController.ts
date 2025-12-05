@@ -660,7 +660,8 @@ export const ebooks = async (req: CustomRequest, res: Response) => {
   try {
     let userType: any = "FREEMIUM";
     if (req.userId) {
-      userType = await UserModel.findById(req.userId).select("type");
+      const user: any = await UserModel.findById(req.userId).select("type");
+      userType = user?.type;
     }
     let ebooks = await EbookModel.find().lean();
 
