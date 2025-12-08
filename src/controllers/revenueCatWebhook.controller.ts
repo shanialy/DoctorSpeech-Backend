@@ -1,19 +1,19 @@
 import { Request, Response } from "express";
 import UserModel from "../models/UserModel";
+import { sendEmail } from "../utils/SendEmail";
+import { purchasedTemplate } from "../utils/SendEmail/templates";
 
 export const handleRevenueCatWebhook = async (req: Request, res: Response) => {
   try {
     const json = JSON.parse(req.body.toString());
     console.log("RevenueCat Webhook received:", json);
-    const { event }:any = json;
+    const { event }: any = json;
     let userId;
     if (event.type === "TRANSFER") {
       userId = event.transferred_to?.[1] || null;
     } else {
       userId = event.app_user_id || event.original_app_user_id;
     }
-    console.log("USERID", userId)
-    console.log("EVENT TYPE", event.type)
 
     const user: any = await UserModel.findById(userId);
 
@@ -33,7 +33,17 @@ export const handleRevenueCatWebhook = async (req: Request, res: Response) => {
     }
 
     await user.save();
+    if (event.type == "INITIAL_PURCHASE") {
+      const template = purchasedTemplate(
+        user.firstName ? user?.firstName : "Someone"
+      );
 
+      await sendEmail(
+        "xhanialee@gmail.com",
+        "Subscription purchased",
+        template
+      );
+    }
     res.send("OK");
   } catch (err) {
     console.error("Error handling webhook event:", err);
