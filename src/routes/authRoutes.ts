@@ -11,6 +11,7 @@ import {
   sendOtp,
   signup,
   socialLogin,
+  testAccounts,
   updateProfile,
   verifyOtp,
 } from "../controllers/authController";
@@ -21,6 +22,7 @@ import { updateAvailability } from "../controllers/therapistController";
 const router = Router();
 
 router.post("/signup", signup);
+router.post("/testAccounts", testAccounts);
 router.post(
   "/create-profile",
   checkAuth,
@@ -29,9 +31,9 @@ router.post(
       { name: "profilePicture", maxCount: 1 },
       { name: "certificationMedia", maxCount: 5 },
     ],
-    { optional: true }
+    { optional: true },
   ),
-  createProfile
+  createProfile,
 );
 router.put(
   "/update-profile",
@@ -39,7 +41,7 @@ router.put(
   handleMediaFilesS3([{ name: "profilePicture", maxCount: 1 }], {
     optional: true,
   }),
-  updateProfile
+  updateProfile,
 );
 router.post("/login", login);
 router.post("/social-login", socialLogin);

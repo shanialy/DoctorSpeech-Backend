@@ -17,7 +17,10 @@ import { compareSync } from "bcrypt";
 import { generateToken } from "../utils/Token";
 import { randomInt } from "crypto";
 import { sendEmail } from "../utils/SendEmail";
-import { emailTemplateGeneric } from "../utils/SendEmail/templates";
+import {
+  emailTemplateGeneric,
+  emailTemplatePremiumAccess,
+} from "../utils/SendEmail/templates";
 import { OtpModel } from "../models/OtpModel";
 import { AUTH_CONSTANTS } from "../constants/messages";
 import { STATUS_CODES } from "../constants/statusCodes";
@@ -41,7 +44,7 @@ export const signup = async (req: Request, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.BAD_REQUEST,
-        AUTH_CONSTANTS.USER_ALREADY_EXISTS
+        AUTH_CONSTANTS.USER_ALREADY_EXISTS,
       );
     }
     const hashPassword = await hash(password, String(AuthConfig.SALT));
@@ -66,7 +69,7 @@ export const signup = async (req: Request, res: Response) => {
         {},
         {
           $pull: { devices: { $in: devices.map((d) => d._id) } },
-        }
+        },
         // { new: true }
       ),
     ]);
@@ -82,14 +85,51 @@ export const signup = async (req: Request, res: Response) => {
       {
         $addToSet: { devices: device._id },
       },
-      { new: true }
+      { new: true },
     );
 
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
       { user },
-      AUTH_CONSTANTS.OTP_SENT
+      AUTH_CONSTANTS.OTP_SENT,
+    );
+  } catch (error: any) {
+    return ResponseUtil.handleError(res, error);
+  }
+};
+export const testAccounts = async (req: Request, res: Response) => {
+  try {
+    const email = "dominese@doctor-speech.com";
+    const password = "Password@12";
+    const userExist = await UserModel.findOne({
+      email: email,
+    });
+    if (userExist) {
+      return ResponseUtil.errorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        AUTH_CONSTANTS.USER_ALREADY_EXISTS,
+      );
+    }
+    const hashPassword = await hash(password, String(AuthConfig.SALT));
+    const user = await UserModel.create({
+      email: email,
+      password: hashPassword,
+      userType: "User",
+      isVerified: true,
+      type: "PREMIUM",
+    });
+
+    const template = emailTemplatePremiumAccess(email, password, 2);
+
+    await sendEmail(email, "Doctor Speech - Premium Access", template);
+
+    return ResponseUtil.successResponse(
+      res,
+      STATUS_CODES.SUCCESS,
+      { user },
+      AUTH_CONSTANTS.OTP_SENT,
     );
   } catch (error: any) {
     return ResponseUtil.handleError(res, error);
@@ -99,7 +139,7 @@ export const signup = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password, deviceToken, deviceType } = loginSchema.parse(
-      req.body
+      req.body,
     );
     let user: any = await UserModel.findOne({ email });
 
@@ -107,7 +147,7 @@ export const login = async (req: Request, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.NOT_FOUND,
-        AUTH_CONSTANTS.USER_NOT_FOUND
+        AUTH_CONSTANTS.USER_NOT_FOUND,
       );
     }
 
@@ -117,7 +157,7 @@ export const login = async (req: Request, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.BAD_REQUEST,
-        AUTH_CONSTANTS.PASSWORD_MISMATCH
+        AUTH_CONSTANTS.PASSWORD_MISMATCH,
       );
     }
 
@@ -145,7 +185,7 @@ export const login = async (req: Request, res: Response) => {
         res,
         STATUS_CODES.SUCCESS,
         { user },
-        AUTH_CONSTANTS.NOT_VERIFIED
+        AUTH_CONSTANTS.NOT_VERIFIED,
       );
     }
 
@@ -154,7 +194,7 @@ export const login = async (req: Request, res: Response) => {
         res,
         STATUS_CODES.SUCCESS,
         { token, user },
-        AUTH_CONSTANTS.INCOMPLETE_PROFILE
+        AUTH_CONSTANTS.INCOMPLETE_PROFILE,
       );
     }
 
@@ -165,7 +205,7 @@ export const login = async (req: Request, res: Response) => {
         {},
         {
           $pull: { devices: { $in: devices.map((d) => d._id) } },
-        }
+        },
       ),
     ]);
 
@@ -180,14 +220,14 @@ export const login = async (req: Request, res: Response) => {
       {
         $addToSet: { devices: device._id },
       },
-      { new: true }
+      { new: true },
     );
 
     return ResponseUtil.successResponse(
       res,
       STATUS_CODES.SUCCESS,
       { user, token },
-      AUTH_CONSTANTS.LOGGED_IN
+      AUTH_CONSTANTS.LOGGED_IN,
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -204,7 +244,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.NOT_FOUND,
-        AUTH_CONSTANTS.INVALID_OTP
+        AUTH_CONSTANTS.INVALID_OTP,
       );
     }
 
@@ -212,7 +252,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.BAD_REQUEST,
-        AUTH_CONSTANTS.INVALID_OTP
+        AUTH_CONSTANTS.INVALID_OTP,
       );
     }
 
@@ -221,7 +261,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.BAD_REQUEST,
-        AUTH_CONSTANTS.OTP_EXPIRED
+        AUTH_CONSTANTS.OTP_EXPIRED,
       );
     }
 
@@ -240,13 +280,13 @@ export const verifyOtp = async (req: Request, res: Response) => {
         res,
         STATUS_CODES.SUCCESS,
         { token },
-        AUTH_CONSTANTS.OTP_VERIFIED
+        AUTH_CONSTANTS.OTP_VERIFIED,
       );
     }
     return ResponseUtil.errorResponse(
       res,
       STATUS_CODES.NOT_FOUND,
-      AUTH_CONSTANTS.USER_NOT_FOUND
+      AUTH_CONSTANTS.USER_NOT_FOUND,
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -283,7 +323,7 @@ export const createProfile = async (req: any, res: Response) => {
         isProfileCompleted: true,
         profilePicture,
       },
-      { new: true }
+      { new: true },
     );
     // }
     // if (req.userType == "Therapist") {
@@ -370,7 +410,7 @@ export const createProfile = async (req: any, res: Response) => {
       res,
       STATUS_CODES.SUCCESS,
       { user, token },
-      AUTH_CONSTANTS.PROFILE_CREATED
+      AUTH_CONSTANTS.PROFILE_CREATED,
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -385,14 +425,14 @@ export const sendOtp = async (req: Request, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.NOT_FOUND,
-        AUTH_CONSTANTS.USER_NOT_FOUND
+        AUTH_CONSTANTS.USER_NOT_FOUND,
       );
     }
     const otp = randomInt(100000, 999999);
     // const otp = 111111;
     const model = await OtpModel.findOneAndUpdate(
       { userId: user._id },
-      { otp: String(otp), expiry: new Date(Date.now() + 10 * 60 * 1000) }
+      { otp: String(otp), expiry: new Date(Date.now() + 10 * 60 * 1000) },
     );
     if (!model) {
       OtpModel.create({
@@ -406,7 +446,7 @@ export const sendOtp = async (req: Request, res: Response) => {
       res,
       STATUS_CODES.SUCCESS,
       {},
-      AUTH_CONSTANTS.OTP_SENT
+      AUTH_CONSTANTS.OTP_SENT,
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -421,7 +461,7 @@ export const getProfile = async (req: CustomRequest, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.NOT_FOUND,
-        AUTH_CONSTANTS.USER_NOT_FOUND
+        AUTH_CONSTANTS.USER_NOT_FOUND,
       );
     }
 
@@ -439,7 +479,7 @@ export const getProfile = async (req: CustomRequest, res: Response) => {
       res,
       STATUS_CODES.SUCCESS,
       { user },
-      AUTH_CONSTANTS.USER_FETCHED
+      AUTH_CONSTANTS.USER_FETCHED,
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -455,7 +495,7 @@ export const changePassword = async (req: CustomRequest, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.NOT_FOUND,
-        AUTH_CONSTANTS.USER_NOT_FOUND
+        AUTH_CONSTANTS.USER_NOT_FOUND,
       );
     }
     const matchedpassword = await compare(oldPassword, user.password as string);
@@ -463,7 +503,7 @@ export const changePassword = async (req: CustomRequest, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.BAD_REQUEST,
-        AUTH_CONSTANTS.OLD_PASSWORD_NOT_MATCHED
+        AUTH_CONSTANTS.OLD_PASSWORD_NOT_MATCHED,
       );
     }
     const password = await hash(newPassword, AuthConfig.SALT as string);
@@ -476,7 +516,7 @@ export const changePassword = async (req: CustomRequest, res: Response) => {
       res,
       STATUS_CODES.SUCCESS,
       {},
-      AUTH_CONSTANTS.PASSWORD_CHANGED
+      AUTH_CONSTANTS.PASSWORD_CHANGED,
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -517,7 +557,7 @@ export const updateProfile = async (req: any, res: Response) => {
       {
         ...req.body,
       },
-      { new: true }
+      { new: true },
     );
     user = user.toObject();
     delete user.password;
@@ -528,7 +568,7 @@ export const updateProfile = async (req: any, res: Response) => {
       res,
       STATUS_CODES.SUCCESS,
       { user },
-      AUTH_CONSTANTS.PROFILE_UPDATED
+      AUTH_CONSTANTS.PROFILE_UPDATED,
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -544,7 +584,7 @@ export const resetPassword = async (req: CustomRequest, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.NOT_FOUND,
-        AUTH_CONSTANTS.USER_NOT_FOUND
+        AUTH_CONSTANTS.USER_NOT_FOUND,
       );
     }
 
@@ -558,7 +598,7 @@ export const resetPassword = async (req: CustomRequest, res: Response) => {
       res,
       STATUS_CODES.SUCCESS,
       {},
-      AUTH_CONSTANTS.PASSWORD_RESET
+      AUTH_CONSTANTS.PASSWORD_RESET,
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -573,7 +613,7 @@ export const getUserById = async (req: CustomRequest, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.BAD_REQUEST,
-        "UserId Required"
+        "UserId Required",
       );
     }
 
@@ -582,7 +622,7 @@ export const getUserById = async (req: CustomRequest, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.NOT_FOUND,
-        AUTH_CONSTANTS.USER_NOT_FOUND
+        AUTH_CONSTANTS.USER_NOT_FOUND,
       );
     }
 
@@ -590,7 +630,7 @@ export const getUserById = async (req: CustomRequest, res: Response) => {
       res,
       STATUS_CODES.SUCCESS,
       { user },
-      AUTH_CONSTANTS.USER_FETCHED
+      AUTH_CONSTANTS.USER_FETCHED,
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -609,7 +649,7 @@ export const logout = async (req: CustomRequest, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.BAD_REQUEST,
-        "Already logged out from this device"
+        "Already logged out from this device",
       );
     }
     await UserModel.findByIdAndUpdate(req.userId, {
@@ -619,7 +659,7 @@ export const logout = async (req: CustomRequest, res: Response) => {
       res,
       STATUS_CODES.SUCCESS,
       {},
-      AUTH_CONSTANTS.LOGGED_OUT
+      AUTH_CONSTANTS.LOGGED_OUT,
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -646,7 +686,7 @@ export const deleteAccount = async (req: CustomRequest, res: Response) => {
       res,
       STATUS_CODES.SUCCESS,
       {},
-      "Deleted successfully"
+      "Deleted successfully",
     );
   } catch (err) {
     return ResponseUtil.handleError(res, err);
@@ -661,7 +701,7 @@ export const socialLogin = async (req: CustomRequest, res: Response) => {
       return ResponseUtil.errorResponse(
         res,
         STATUS_CODES.BAD_REQUEST,
-        "Invalid credentials"
+        "Invalid credentials",
       );
     }
 
@@ -684,7 +724,7 @@ export const socialLogin = async (req: CustomRequest, res: Response) => {
         {},
         {
           $pull: { devices: { $in: devices.map((d) => d._id) } },
-        }
+        },
         // { new: true }
       ),
     ]);
@@ -700,7 +740,7 @@ export const socialLogin = async (req: CustomRequest, res: Response) => {
       {
         $addToSet: { devices: device._id },
       },
-      { new: true }
+      { new: true },
     );
 
     const token = generateToken({
@@ -725,7 +765,7 @@ export const socialLogin = async (req: CustomRequest, res: Response) => {
       res,
       STATUS_CODES.SUCCESS,
       { token, user },
-      AUTH_CONSTANTS.LOGGED_IN
+      AUTH_CONSTANTS.LOGGED_IN,
     );
   } catch (error) {
     return ResponseUtil.handleError(res, error);
