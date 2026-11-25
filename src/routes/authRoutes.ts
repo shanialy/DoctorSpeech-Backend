@@ -8,6 +8,7 @@ import {
   login,
   logout,
   newVerify,
+  resendOtp,
   resetPassword,
   sendOtp,
   signup,
@@ -31,9 +32,9 @@ router.post(
       { name: "profilePicture", maxCount: 1 },
       { name: "certificationMedia", maxCount: 5 },
     ],
-    { optional: true }
+    { optional: true },
   ),
-  createProfile
+  createProfile,
 );
 router.put(
   "/update-profile",
@@ -41,7 +42,7 @@ router.put(
   handleMediaFilesS3([{ name: "profilePicture", maxCount: 1 }], {
     optional: true,
   }),
-  updateProfile
+  updateProfile,
 );
 router.post("/login", login);
 router.post("/signup-login", signupLogin);
@@ -49,6 +50,7 @@ router.post("/new-verify", newVerify);
 router.post("/social-login", socialLogin);
 router.post("/verify-otp", verifyOtp);
 router.post("/send-otp", sendOtp);
+router.post("/resend-otp", resendOtp);
 router.get("/profile", checkAuth, getProfile);
 router.post("/update-availability", checkAuth, updateAvailability);
 router.post("/change-password", checkAuth, changePassword);

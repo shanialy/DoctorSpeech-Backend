@@ -517,6 +517,41 @@ export const sendOtp = async (req: Request, res: Response) => {
     return ResponseUtil.handleError(res, err);
   }
 };
+export const resendOtp = async (req: Request, res: Response) => {
+  try {
+    const { email } = otpSendSchema.parse(req.body);
+    const user = await LatestUserModel.findOne({ email });
+    if (!user) {
+      return ResponseUtil.errorResponse(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        AUTH_CONSTANTS.USER_NOT_FOUND,
+      );
+    }
+    const otp = randomInt(100000, 999999);
+    // const otp = 111111;
+    const model = await LatestOtpModel.findOneAndUpdate(
+      { userId: user._id },
+      { otp: String(otp), expiry: new Date(Date.now() + 10 * 60 * 1000) },
+    );
+    if (!model) {
+      LatestOtpModel.create({
+        userId: user._id,
+        otp: String(otp),
+      });
+    }
+    const template = emailTemplateGeneric(otp);
+    await sendEmail(email, AUTH_CONSTANTS.VERIFICATION_CODE, template);
+    return ResponseUtil.successResponse(
+      res,
+      STATUS_CODES.SUCCESS,
+      {},
+      AUTH_CONSTANTS.OTP_SENT,
+    );
+  } catch (err) {
+    return ResponseUtil.handleError(res, err);
+  }
+};
 
 export const getProfile = async (req: CustomRequest, res: Response) => {
   try {
