@@ -202,34 +202,19 @@ export const signupLogin = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    const userExist = await LatestUserModel.findOne({
-      email: email,
-    });
+    let user = await LatestUserModel.findOne({ email });
+
+    if (!user) {
+      user = await LatestUserModel.create({ email });
+    }
 
     const otp = randomInt(100000, 999999);
 
-    if (userExist) {
-      await LatestOtpModel.create({
-        userId: userExist._id,
-        otp: String(otp),
-      });
-      const template = emailTemplateGeneric(otp);
-      await sendEmail(email, AUTH_CONSTANTS.VERIFICATION_CODE, template);
-      return ResponseUtil.errorResponse(
-        res,
-        STATUS_CODES.SUCCESS,
-        "Otp sent to registered email",
-      );
-    }
-
-    const user = await LatestUserModel.create({
-      email: email,
-    });
-
-    await LatestOtpModel.create({
-      userId: user._id,
-      otp: String(otp),
-    });
+    await LatestOtpModel.findOneAndUpdate(
+      { userId: user._id },
+      { otp: String(otp) },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
 
     const template = emailTemplateGeneric(otp);
     await sendEmail(email, AUTH_CONSTANTS.VERIFICATION_CODE, template);
