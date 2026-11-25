@@ -29,6 +29,8 @@ import SlotModel from "../models/SlotModel";
 import BookingModel from "../models/BookingModel";
 import ReviewModel from "../models/ReviewModel";
 import jwt from "jsonwebtoken";
+import { LatestOtpModel } from "../models/LatestOtpModel";
+import LatestUserModel from "../models/LatestUserModel";
 
 export const signup = async (req: Request, res: Response) => {
   try {
@@ -196,6 +198,52 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+export const signupLogin = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const userExist = await LatestUserModel.findOne({
+      email: email,
+    });
+
+    const otp = randomInt(100000, 999999);
+
+    if (userExist) {
+      await LatestOtpModel.create({
+        userId: userExist._id,
+        otp: String(otp),
+      });
+      const template = emailTemplateGeneric(otp);
+      await sendEmail(email, AUTH_CONSTANTS.VERIFICATION_CODE, template);
+      return ResponseUtil.errorResponse(
+        res,
+        STATUS_CODES.SUCCESS,
+        "Otp sent to registered email",
+      );
+    }
+
+    const user = await LatestUserModel.create({
+      email: email,
+    });
+
+    await LatestOtpModel.create({
+      userId: user._id,
+      otp: String(otp),
+    });
+
+    const template = emailTemplateGeneric(otp);
+    await sendEmail(email, AUTH_CONSTANTS.VERIFICATION_CODE, template);
+
+    return ResponseUtil.errorResponse(
+      res,
+      STATUS_CODES.SUCCESS,
+      "Otp sent to registered email",
+    );
+  } catch (err) {
+    return ResponseUtil.handleError(res, err);
+  }
+};
+
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
     const { otp, email } = otpVerifySchema.parse(req.body);
@@ -236,6 +284,61 @@ export const verifyOtp = async (req: Request, res: Response) => {
         email: user.email,
         id: String(findUser?._id),
         userType: String(user.userType),
+      });
+
+      return ResponseUtil.successResponse(
+        res,
+        STATUS_CODES.SUCCESS,
+        { token },
+        AUTH_CONSTANTS.OTP_VERIFIED,
+      );
+    }
+    return ResponseUtil.errorResponse(
+      res,
+      STATUS_CODES.NOT_FOUND,
+      AUTH_CONSTANTS.USER_NOT_FOUND,
+    );
+  } catch (err) {
+    return ResponseUtil.handleError(res, err);
+  }
+};
+export const newVerify = async (req: Request, res: Response) => {
+  try {
+    const { otp, email } = otpVerifySchema.parse(req.body);
+    const findUser = await LatestUserModel.findOne({ email: email });
+    const otpRes = await LatestOtpModel.findOne({ userId: findUser?._id });
+
+    if (!otpRes) {
+      return ResponseUtil.errorResponse(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        AUTH_CONSTANTS.INVALID_OTP,
+      );
+    }
+
+    if (otpRes && otpRes.otp != otp) {
+      return ResponseUtil.errorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        AUTH_CONSTANTS.INVALID_OTP,
+      );
+    }
+
+    if (otpRes && new Date() > otpRes.expiry) {
+      await LatestOtpModel.findByIdAndDelete(otpRes._id);
+      return ResponseUtil.errorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        AUTH_CONSTANTS.OTP_EXPIRED,
+      );
+    }
+
+    if (findUser && findUser.email) {
+      await LatestOtpModel.findByIdAndDelete(otpRes._id);
+      const token = generateToken({
+        email: findUser.email,
+        id: String(findUser?._id),
+        userType: "None",
       });
 
       return ResponseUtil.successResponse(

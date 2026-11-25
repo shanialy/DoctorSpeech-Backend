@@ -7,9 +7,11 @@ import {
   getUserById,
   login,
   logout,
+  newVerify,
   resetPassword,
   sendOtp,
   signup,
+  signupLogin,
   socialLogin,
   updateProfile,
   verifyOtp,
@@ -42,6 +44,8 @@ router.put(
   updateProfile
 );
 router.post("/login", login);
+router.post("/signup-login", signupLogin);
+router.post("/new-verify", newVerify);
 router.post("/social-login", socialLogin);
 router.post("/verify-otp", verifyOtp);
 router.post("/send-otp", sendOtp);
